@@ -30,7 +30,7 @@ def ChordListGen(notes,innotations):
     for i in notes:
         for j in innotations:
             res.append(i+':'+j)
-    res.append('N')
+    # res.append('N') #remove N chord
     return res
 def BiasGen(kernel_map):
     """

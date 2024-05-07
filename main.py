@@ -12,7 +12,7 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     network_map=NETWORK_MAP_COMPACT_2
     nodes_map=NODES_MAP_COMPACT_2
     hop_length=4410
-    chord_list=ChordListGen(NOTES,innotation)
+    chord_list=ChordListGen(NOTES,innotation) +["N"]
     chromagram_dict=create_chromagram_dict(chord_list=chord_list)
     _, nested_cof = get_nested_circle_of_fifths()
     #input process
@@ -24,29 +24,31 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     # divided_batch_num=math.ceil(samples/BATCH) #for GPU
     divided_batch_num=int(samples/BATCH) #for CPU
     neural_network=CNN_Audio(input_data.shape,chord_list,network_map,divided_batch_num,nodes_map)
-    neural_network.load_b_and_w(postfix)
+    neural_network.load_params(postfix)
     neural_network.forward(input_data,False)
     
     if groundtruth_dir!=None:
-        groundtruth_data=preprocessGroundTruthFile(groundtruth_dir,samples,chord_list,CHORD_DICT_2,NOTES_DICT,window_length=1.9)
+        groundtruth_data,_,_=preprocessGroundTruthFile(groundtruth_dir,samples,chord_list,CHORD_DICT_2,NOTES_DICT,window_length=1.9,octave_shift=[0],change=False)
+        groundtruth_data=groundtruth_data[0]
         print("Accuracy with CNN only: {}%".format(neural_network.evaluate(groundtruth_data)))
         groundtruth_idx=tf.argmax(groundtruth_data,axis=1)
         groundtruth_chord=[]
         for i in groundtruth_idx:
             groundtruth_chord.append(chord_list[i])
         print(groundtruth_chord)
-    chroma_data=neural_network.toChordProb(chord_list=chord_list)
+    chroma_data=neural_network.toChordProb()
     # none_idx=[]
     # for i in range(chroma_data.shape[0]):
     #     if np.array_equal(chroma_data[i,:],np.zeros(12)):
     #         none_idx.append(i)
     # np.delete(chroma_data,none_idx,axis=0)
-    chroma_data=np.delete(chroma_data,-1,axis=1).T
+    # chroma_data=np.delete(chroma_data,-1,axis=1).T
+    chroma_data=chroma_data.T
     neural_network.clear_data()
     #HMM:
     templates=list(chromagram_dict.values())
     nFrames=samples
-    (PI, A, B) = hmm.initialize(chroma_data, np.array(templates), chord_list[:-1], nested_cof) #remove N chord
+    (PI, A, B) = hmm.initialize(chroma_data, np.array(templates), chord_list[:-1], nested_cof) 
     (path, states) = hmm.viterbi(PI, A, B)
 
     # normalize path
@@ -76,8 +78,10 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     print("Final accuracy: ",acc*100,"%")
     return final_chords
 
-# res=main("08 Within You Without You.mp3","08_-_Within_You_Without_You.lab")
-res=main("01_I Saw Her Standing There.mp3","01_-_I_Saw_Her_Standing_There.lab")
-# res=main("02_Misery.mp3","02_-_Misery.lab")
+res=main("08 Within You Without You.mp3","08_-_Within_You_Without_You.lab")
+print(res)
+res=main("09. You Never Give Me Your Money.mp3","09_-_You_Never_Give_Me_Your_Money.lab")
+print(res)
+res=main("02_Misery.mp3","02_-_Misery.lab")
 print(res)
 ###B is currently 12-D, Change B to 25-D? Or replace mutirivate gaussian to bayes prob for init B (remove N chord prob)

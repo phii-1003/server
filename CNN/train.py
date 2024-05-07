@@ -46,7 +46,7 @@ from constant import *
 #         idx+=1
 #     # return neural_network.data
 
-def train(neural_network:CNN_Audio,input_data,groundtruth_data,learning_rate_map,samples):
+def train(neural_network:CNN_Audio,input_data,groundtruth_data,input_test,groundtruth_test,learning_rate_map,samples):
     """
     0. desc: performing train on the dataset
     1. params:
@@ -74,6 +74,13 @@ def train(neural_network:CNN_Audio,input_data,groundtruth_data,learning_rate_map
                     neural_network.forward(input)
                     neural_network.backward(groundtruth,t)
             print(neural_network.evaluate(groundtruth_data_array))
+            neural_network.clear_data()
+            #testing
+            input_test_array=np.array_split(input_test,neural_network.batches)
+            groundtruth_test_array=np.array_split(groundtruth_test,neural_network.batches)
+            for input in input_test_array:
+                neural_network.forward(input)
+            print(neural_network.evaluate(groundtruth_test_array))
             neural_network.clear_data()
         idx+=1
     # return neural_network.data

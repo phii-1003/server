@@ -9,7 +9,7 @@ from __future__ import division
 from scipy.signal import hamming
 from scipy.fftpack import fft
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def nearestPow2(inp):

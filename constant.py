@@ -1,5 +1,5 @@
 #############################CNN TRAIN####################################
-BATCH=64
+BATCH=280
 
 POSTFIX_0_95_2="_0_95_2"
 POSTFIX_1_9_2="_1_9_2"
@@ -8,13 +8,18 @@ POSTFIX_1_9_5="_1_9_5"
 POSTFIX_0_95_7="_0_95_7"
 POSTFIX_1_9_7="_1_9_7"
 
+# LEARNING_RATE_MAP=[
+#     (4,0.05),
+#     (4,0.03),
+#     (4,0.02),
+#     (4,0.01)
+# ]
 LEARNING_RATE_MAP=[
-    (10,0.05),
-    (5,0.07),
-    (5,0.09),
-    (6,0.07),
-    (6,0.03),
-    (8,0.01)
+    (2,0.004),
+    (2,0.006),
+    (3,0.008),
+    (3,0.011),
+    (4,0.002)
 ]
 
 NODES_MAP_BIG_2=[
@@ -113,18 +118,33 @@ NODES_MAP_COMPACT_2=[
 32*46*13,
 64*13*3,
 64*13*3,
-25*13*3,
-25*1*1]
+24*13*3,
+24*1*1]
 NETWORK_MAP_COMPACT_2=[
     ["conv","reLU",(4,4,1,32),(1,1),"VALID"],
     ["conv","reLU",(4,4,32,32),(1,1),"VALID"],
     ["pool-max",None,(3,1),(3,1),"VALID"],
     ["conv","reLU",(34,11,32,64),(1,1),"VALID"],
     ["conv","reLU",(4,4,64,64),(1,1),"SAME"],
-    ["conv","linear",(1,1,64,25),(1,1),"VALID"],
+    ["conv","linear",(1,1,64,24),(1,1),"VALID"],
     ["pool-avg",None,(13,3),(1,1),"VALID"],
     ["softmax",None,None,None,None]
 ]
+# NODES_MAP_COMPACT_2=[
+# 144*19,
+# 32*142*17,
+# 64*140*15,
+# 64*35*5,
+# 25*33*3,
+# 25*1*1]
+# NETWORK_MAP_COMPACT_2=[
+#     ["conv","reLU",(3,3,1,32),(1,1),"VALID"],
+#     ["conv","reLU",(3,3,32,64),(1,1),"VALID"],
+#     ["pool-max",None,(4,3),(4,3),"VALID"],
+#     ["conv","reLU",(3,3,64,25),(1,1),"VALID"],
+#     ["pool-avg",None,(33,3),(1,1),"VALID"],
+#     ["softmax",None,None,None,None]
+# ]
 
 NODES_MAP_COMPACT_5=[
 144*19,
@@ -177,11 +197,12 @@ CHORD_DICT_7={'':'maj','maj':'maj','min':'min','dim':'dim','aug':'7','maj7':'maj
 
 NOTES_DICT={'Bb':'A#','Ab':'G#','Gb':'F#','Eb':'D#','Db':'C#','Cb':'B','Fb':'E'}
 
-# AUDIO_DIR="/mnt/d/0_Course/HKVII-VIII Graduation Thesis/Local code/Official work/CNN/Groundtruth/Audio/"
+AUDIO_DIR="/mnt/e/Local code/Official work/CNN/Groundtruth/Audio/"
+CHORD_DIR="/mnt/e/Local code/Official work/CNN/Groundtruth/Chord/"
+OUTPUT_DIR="/mnt/e/Local code/Official work/CNN/Output/"
+
 AUDIO_DIR="CNN\\Groundtruth\\Audio\\"
-# CHORD_DIR="/mnt/d/0_Course/HKVII-VIII Graduation Thesis/Local code/Official work/CNN/Groundtruth/Chord/"
 CHORD_DIR="CNN\\Groundtruth\\Chord\\"
-# OUTPUT_DIR="/mnt/d/0_Course/HKVII-VIII Graduation Thesis/Local code/Official work/CNN/Output/"
 OUTPUT_DIR="CNN\\Output\\"
 
 ######################COMMON######################

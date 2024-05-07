@@ -1,4 +1,5 @@
 import tensorflow as tf
+import math
 import keras
 import json
 import numpy as np
@@ -65,7 +66,14 @@ class CNN_Audio(tf.Module):
 
         #used in backward
         ## for batch normalization
-        self.gamma=tf.Variable(0)
+        self.beta=[tf.Variable(0,dtype='float32') for _ in biasGen]#offset
+        self.gamma=[tf.Variable(1,dtype='float32') for _ in biasGen]#scale
+
+        #for ema
+        self.alpha=0.5 #smooth factor
+        self.ema_mean=[math.nan for _ in biasGen]
+        self.ema_variance=[math.nan for _ in biasGen]
+
         self.loss=keras.losses.CategoricalCrossentropy()
         self.optimizer=keras.optimizers.Adam(self.learning_rate)
     #main functions
@@ -86,14 +94,20 @@ class CNN_Audio(tf.Module):
                 tmp_res=tf.nn.conv2d(tmp_res,self.w[conv_counter],self.stride[i],self.padding[i])+self.b[conv_counter]
                 if is_training:
                     mean,variance=tf.nn.moments(tmp_res,[0])
+                    self.ema_mean[conv_counter]=self.alpha*(mean-self.ema_mean[conv_counter])+self.ema_mean[conv_counter]
+                    self.ema_variance[conv_counter]=self.alpha*(mean-self.ema_variance[conv_counter])+self.ema_variance[conv_counter]
                     tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=None,scale=None,variance_epsilon=1e-6)
+                else:
+                    mean=self.ema_mean[conv_counter]
+                    variance=self.ema_variance[conv_counter]
+                tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=self.beta[conv_counter],scale=self.gamma[conv_counter],variance_epsilon=1e-6)
                 conv_counter+=1
                 if self.activations[i]=="reLU":
-                    tmp_res=tf.nn.leaky_relu(tmp_res,alpha=1e-4)
+                    tmp_res=tf.nn.relu(tmp_res)
                 #these 2 lines are customized just for my CNN structure
                 # if i<3 and is_training:
                 if is_training:
-                    tmp_res=tf.nn.dropout(tmp_res,0.5)
+                    tmp_res=tf.nn.dropout(tmp_res,0.2)
             elif self.network[i]=="pool-max":
                 tmp_res=tf.nn.max_pool(tmp_res,self.kernels_map[i],self.stride[i],self.padding[i])
             elif self.network[i]=="pool-avg":
@@ -114,7 +128,7 @@ class CNN_Audio(tf.Module):
         3.Note: 
         """
         cross_entropy=self.loss.__call__(groundtruth_data,self.data[-1])
-        self.optimizer.minimize(cross_entropy,self.b+self.w,t)
+        self.optimizer.minimize(cross_entropy,self.b+self.w+self.beta+self.gamma,t)
         # dw,db=t.gradient(cross_entropy,[self.w,self.b])
         # # self.optimizer.apply_gradients([(dw,self.w),(db,self.b)])
         # for i in range(len(self.w)):
@@ -160,25 +174,21 @@ class CNN_Audio(tf.Module):
         # kernel_numpy=np.array(kernel_tensor_list) #for GPU
         for i in range(len(self.w)):
             np.save(OUTPUT_DIR+"kernel_"+str(i)+postfix,self.w[i])
-        for i in range(len(self.b)):
             np.save(OUTPUT_DIR+"bias_"+str(i)+postfix,self.b[i])
+            np.save(OUTPUT_DIR+"beta_"+str(i)+postfix,self.beta[i])
+            np.save(OUTPUT_DIR+"gamma_"+str(i)+postfix,self.gamma[i])
+            np.save(OUTPUT_DIR+"ema_mean_"+str(i)+postfix,self.ema_mean[i])
+            np.save(OUTPUT_DIR+"ema_var_"+str(i)+postfix,self.ema_variance[i])
+
     
     #helper functions
     def toChordProb(self,chord_list,min=0.2):
         f1=open(CHORD_DIR+"chord_prob_dict.json")
-        f2=open(CHORD_DIR+"total_frames.json")
-        chords_count_lst=json.load(f1).values()
-        total_frames_data=json.load(f2)
-        chords_prob_lst=[a/total_frames_data for a in chords_count_lst]
-        # chromagram_dict=create_chromagram_dict(chord_list=chord_list,min=min)#the chord list here must be the same chord list that is used for preproccessing
+        chords_prob_lst=json.load(f1).values()
         full_data= tf.concat(self.data,axis=0)
         predicted_value=full_data.numpy()/chords_prob_lst
-        # res=np.full((len(predicted_value),12),min)
-        # for i in range(len(predicted_value)):
-        #     chord=chord_list[predicted_value[i]]
-        #     res[i,:]=chromagram_dict[chord]
         return predicted_value
-    def load_b_and_w(self,postfix):
+    def load_params(self,postfix):
         """
         0. desc: load training result from files in Output dir
         1. params:
@@ -190,6 +200,10 @@ class CNN_Audio(tf.Module):
         for i in range(len(self.b)):
             self.b[i]=np.load(OUTPUT_DIR+"bias_"+str(i)+postfix+".npy")
             self.w[i]=np.load(OUTPUT_DIR+"kernel_"+str(i)+postfix+".npy")
+            self.beta[i]=np.load(OUTPUT_DIR+"beta_"+str(i)+postfix+".npy")
+            self.gamma[i]=np.load(OUTPUT_DIR+"gamma_"+str(i)+postfix+".npy")
+            self.ema_mean[i]=np.load(OUTPUT_DIR+"ema_mean_"+str(i)+postfix+".npy")
+            self.ema_variance[i]=np.load(OUTPUT_DIR+"ema_var_"+str(i)+postfix+".npy")
     def clear_data(self):
         self.data=[]
     def SetLearning_rate(self,learning_rate):
