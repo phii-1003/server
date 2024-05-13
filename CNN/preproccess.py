@@ -6,6 +6,7 @@ import json
 import os
 import jams
 import math
+
 def calChordProb(groundtruth_train,wanted_chord_list,chord_dir):
     chord_prob_dict={k:0 for k in wanted_chord_list}
     total_frames=groundtruth_train.shape[0]
@@ -18,22 +19,22 @@ def calChordProb(groundtruth_train,wanted_chord_list,chord_dir):
         json.dump(chord_prob_dict, outfile)
     print(total_frames)
     print(chord_prob_dict)
-def fixChordProb(groundtruth_train,wanted_chord_list,delete_amount=25000):
+def fixChordProb(groundtruth,wanted_chord_list,amount=25000,delete=True):
     #aim: fix number of major chords
-    delete_chord_idxs=[]
-    prev_val=-1
-    major_idxs=[]
-    major_chord_delete_count={wanted_chord_list[i]:0 for i in range(len(wanted_chord_list)) if i%2==0}
+    alter_chord_idxs=[]
+    chord_alter_idxs=[]
+    ismajor_int=0 if delete else 1
+    chord_alter_count={wanted_chord_list[i]:0 for i in range(len(wanted_chord_list)) if i%2==ismajor_int}
     chord_prob_dict={k:0 for k in wanted_chord_list}
-    total_frames=groundtruth_train.shape[0]
-    groundtruth_train_value=np.argmax(groundtruth_train,axis=1)
+    total_frames=groundtruth.shape[0]
+    groundtruth_train_value=np.argmax(groundtruth,axis=1)
         
     for i in range(len(groundtruth_train_value)):
         val=groundtruth_train_value[i]
         chord_prob_dict[wanted_chord_list[val]]+=1
-        if len(delete_chord_idxs)>=delete_amount:
+        if len(alter_chord_idxs)>=amount:
             break
-        if val%2==0: #major
+        if val%2==ismajor_int: #major if 0, minor if 1
             # if major_chord_delete_count[wanted_chord_list[val]]<delete_amount/10:
             #     if prev_val!=val:
             #         prev_val=val
@@ -43,18 +44,18 @@ def fixChordProb(groundtruth_train,wanted_chord_list,delete_amount=25000):
             #         total_frames-=1
             #     else:
             #         prev_val=-1
-            major_idxs.append(i)
-    while len(delete_chord_idxs)<delete_amount:
-        i=np.random.randint(0,len(major_idxs))
-        val=major_idxs[i]
-        if val not in delete_chord_idxs:
-            delete_chord_idxs.append(val)
+            chord_alter_idxs.append(i)
+    while len(alter_chord_idxs)<amount:
+        i=np.random.randint(0,len(chord_alter_idxs))
+        val=chord_alter_idxs[i]
+        if val not in alter_chord_idxs:
+            alter_chord_idxs.append(val)
             chord_prob_dict[wanted_chord_list[groundtruth_train_value[val]]]-=1
-            major_chord_delete_count[wanted_chord_list[groundtruth_train_value[val]]]+=1
+            chord_alter_count[wanted_chord_list[groundtruth_train_value[val]]]+=1
             total_frames-=1
     print(total_frames)
     print(chord_prob_dict)
-    return delete_chord_idxs
+    return alter_chord_idxs
 
 def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes_dict,wanted_chord_list,hop_length,window_frames,postfix,octave_shift=[-1,0,1],usage="test"):
     """

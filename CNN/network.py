@@ -10,7 +10,7 @@ from create_templates import create_chromagram_dict
 class MyLRSchedule(keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, initial_learning_rate,decay_step):
         self.learning_rate = initial_learning_rate
-        self.decay=0.9
+        self.decay=0.8
         self.decay_step=decay_step
     def setLR(self,lr):
         self.learning_rate=lr
@@ -71,7 +71,7 @@ class CNN_Audio(tf.Module):
         # else:
         self.w=[tf.Variable(i,dtype='float32') for i in kernelGen] #[layer,height,width,inChannels,quantity]
         self.b=[tf.Variable(i,dtype='float32') for i in biasGen]
-        self.learning_rate=MyLRSchedule(0.001,26)
+        self.learning_rate=MyLRSchedule(0.001,20)
 
         #used in backward
         ## for batch normalization
@@ -80,7 +80,7 @@ class CNN_Audio(tf.Module):
         self.beta=[tf.Variable(0,dtype='float32')]#offset
         self.gamma=[tf.Variable(1,dtype='float32')]#scale
         #for ema
-        self.alpha=0.5 #smooth factor
+        self.alpha=0.7 #smooth factor
         self.ema_mean=[math.nan for _ in self.beta]
         self.ema_variance=[math.nan for _ in self.beta]
 
@@ -108,11 +108,6 @@ class CNN_Audio(tf.Module):
             return self.alpha*(prev-x)+x if x is not math.nan else prev
         for i in range(0,self.layers):
             if self.network[i]=="conv":
-                tmp_res=tf.nn.conv2d(tmp_res,self.w[conv_counter],self.stride[i],self.padding[i])+self.b[conv_counter]
-                # checkErr(tmp_res)
-                # checkErr(tmp_res)
-                if self.activations[i]=="reLU":
-                    tmp_res=tf.nn.relu(tmp_res)
                 # if conv_counter==0:
                 #     if is_training:
                 #         mean,variance=tf.nn.moments(tmp_res,[0])
@@ -122,13 +117,17 @@ class CNN_Audio(tf.Module):
                 #         mean=self.ema_mean[0]
                 #         variance=self.ema_variance[0] #negative mean and var element causes nan. Use this in report
                 #     tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=self.beta[0],scale=self.gamma[0],variance_epsilon=1e-4)
-                #these 2 lines are customized just for my CNN structure
-                # if i<3 and is_training:
+                tmp_res=tf.nn.conv2d(tmp_res,self.w[conv_counter],self.stride[i],self.padding[i])+self.b[conv_counter]
+                # checkErr(tmp_res)
+                # checkErr(tmp_res)
+   
+                if self.activations[i]=="reLU":
+                    tmp_res=tf.nn.relu(tmp_res)
                 if is_training:
                     # if conv_counter<2:
                     #     tmp_res=tf.nn.dropout(tmp_res,0.25)
                     # else:
-                    tmp_res=tf.nn.dropout(tmp_res,0.25)
+                    tmp_res=tf.nn.dropout(tmp_res,0.3)
                 conv_counter+=1
             elif self.network[i]=="pool-max":
                 tmp_res=tf.nn.max_pool(tmp_res,self.kernels_map[i],self.stride[i],self.padding[i])
@@ -212,10 +211,11 @@ class CNN_Audio(tf.Module):
         f1=open(CHORD_DIR+"chord_prob_dict.json")
         chords_prob_lst=np.array(list(json.load(f1).values()),dtype='float32')
         full_data= tf.concat(self.data,axis=0)
-        print(full_data.numpy())
         predicted_value=full_data.numpy()/chords_prob_lst
+
         # for i in range(len(predicted_value)):
         #     predicted_value[i,:]/=sum(predicted_value[i,:])
+        print(predicted_value)
         return predicted_value
     def load_params(self,postfix):
         """

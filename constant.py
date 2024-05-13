@@ -1,5 +1,5 @@
 #############################CNN TRAIN####################################
-BATCH=256
+BATCH=240
 
 POSTFIX_0_95_2="_0_95_2"
 POSTFIX_1_9_2="_1_9_2"
@@ -15,13 +15,12 @@ POSTFIX_1_9_7="_1_9_7"
 #     (4,0.01)
 # ]
 LEARNING_RATE_MAP_PRETRAIN=[
-    (6,9e-4),
+    (4,6e-4),
 ]
 
 LEARNING_RATE_MAP=[
-    (10,8e-4),
-    (5,5e-4),
-    (3,1e-4)
+    (10,5e-4),
+    (5,4e-4),
 ]
 
 NODES_MAP_BIG_2=[
@@ -154,12 +153,14 @@ NETWORK_MAP_BIG_7=[
 NODES_MAP_COMPACT_2=[
 12*19,
 24*10*17,
-48*8*15,
+24*7*14,
+24*5*12,
 24*1*1]
 NETWORK_MAP_COMPACT_2=[
     ["conv","reLU",(3,3,1,12),(1,1),"VALID"],
-    ["conv","reLU",(3,3,12,24),(1,1),"VALID"],
-    ["pool-avg",None,(8,15),(1,1),"VALID"],
+    ["conv","reLU",(4,4,12,3),(1,1),"VALID"],
+    ["conv","reLU",(3,3,3,24),(1,1),"VALID"],
+    ["pool-avg",None,(5,12),(1,1),"VALID"],
     ["softmax",None,None,None,None]
 ]
 
