@@ -110,25 +110,25 @@ class CNN_Audio(tf.Module):
             if self.network[i]=="conv":
                 tmp_res=tf.nn.conv2d(tmp_res,self.w[conv_counter],self.stride[i],self.padding[i])+self.b[conv_counter]
                 # checkErr(tmp_res)
-                if conv_counter==1:
-                    if is_training:
-                        mean,variance=tf.nn.moments(tmp_res,[0])
-                        self.ema_mean[0]=tf.stop_gradient(calEMA(mean,self.ema_mean[0]))
-                        self.ema_variance[0]=tf.stop_gradient(calEMA(variance,self.ema_variance[0]))
-                    else:
-                        mean=self.ema_mean[0]
-                        variance=self.ema_variance[0] #negative mean and var element causes nan. Use this in report
-                    tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=self.beta[0],scale=self.gamma[0],variance_epsilon=1e-4)
                 # checkErr(tmp_res)
                 if self.activations[i]=="reLU":
                     tmp_res=tf.nn.relu(tmp_res)
+                # if conv_counter==0:
+                #     if is_training:
+                #         mean,variance=tf.nn.moments(tmp_res,[0])
+                #         self.ema_mean[0]=tf.stop_gradient(calEMA(mean,self.ema_mean[0]))
+                #         self.ema_variance[0]=tf.stop_gradient(calEMA(variance,self.ema_variance[0]))
+                #     else:
+                #         mean=self.ema_mean[0]
+                #         variance=self.ema_variance[0] #negative mean and var element causes nan. Use this in report
+                #     tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=self.beta[0],scale=self.gamma[0],variance_epsilon=1e-4)
                 #these 2 lines are customized just for my CNN structure
                 # if i<3 and is_training:
                 if is_training:
                     # if conv_counter<2:
                     #     tmp_res=tf.nn.dropout(tmp_res,0.25)
                     # else:
-                    tmp_res=tf.nn.dropout(tmp_res,0.3)
+                    tmp_res=tf.nn.dropout(tmp_res,0.25)
                 conv_counter+=1
             elif self.network[i]=="pool-max":
                 tmp_res=tf.nn.max_pool(tmp_res,self.kernels_map[i],self.stride[i],self.padding[i])
@@ -152,8 +152,8 @@ class CNN_Audio(tf.Module):
         """
 
         cross_entropy=self.loss_cal(groundtruth_data)
-        self.optimizer.minimize(cross_entropy,self.b+self.w+self.beta+self.gamma,t)
-        # self.optimizer.minimize(cross_entropy,self.b+self.w,t)
+        # self.optimizer.minimize(cross_entropy,self.b+self.w+self.beta+self.gamma,t)
+        self.optimizer.minimize(cross_entropy,self.b+self.w,t)
         return cross_entropy.numpy()
     
 
@@ -213,7 +213,6 @@ class CNN_Audio(tf.Module):
         chords_prob_lst=np.array(list(json.load(f1).values()),dtype='float32')
         full_data= tf.concat(self.data,axis=0)
         print(full_data.numpy())
-        predicted_value=full_data.numpy()
         predicted_value=full_data.numpy()/chords_prob_lst
         # for i in range(len(predicted_value)):
         #     predicted_value[i,:]/=sum(predicted_value[i,:])

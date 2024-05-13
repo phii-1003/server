@@ -19,8 +19,9 @@ LEARNING_RATE_MAP_PRETRAIN=[
 ]
 
 LEARNING_RATE_MAP=[
-    (10,9e-4),
-    (10,4e-4),
+    (10,8e-4),
+    (5,5e-4),
+    (3,1e-4)
 ]
 
 NODES_MAP_BIG_2=[
@@ -153,14 +154,12 @@ NETWORK_MAP_BIG_7=[
 NODES_MAP_COMPACT_2=[
 12*19,
 24*10*17,
-24*8*15,
-24*6*13,
+48*8*15,
 24*1*1]
 NETWORK_MAP_COMPACT_2=[
-    ["conv","reLU",(3,3,1,24),(1,1),"VALID"],
-    ["conv","reLU",(3,3,24,24),(1,1),"VALID"],
-    ["conv","reLU",(3,3,24,24),(1,1),"VALID"],
-    ["pool-avg",None,(6,13),(1,1),"VALID"],
+    ["conv","reLU",(3,3,1,12),(1,1),"VALID"],
+    ["conv","reLU",(3,3,12,24),(1,1),"VALID"],
+    ["pool-avg",None,(8,15),(1,1),"VALID"],
     ["softmax",None,None,None,None]
 ]
 

@@ -25,7 +25,7 @@ def main(option="training",innotation=INNOTATION_2,postfix=POSTFIX_1_9_2,network
     #fix chord imbalance
     input_train=np.concatenate((input_train,input_pretrain))
     groundtruth_train=np.concatenate((groundtruth_train,groundtruth_pretrain))
-    delete_idxs_train=fixChordProb(groundtruth_train,wanted_chord_list=chord_list,delete_amount=24000)
+    delete_idxs_train=fixChordProb(groundtruth_train,wanted_chord_list=chord_list,delete_amount=25000)
     input_train=np.delete(input_train,delete_idxs_train,axis=0)
     groundtruth_train=np.delete(groundtruth_train,delete_idxs_train,axis=0)
     calChordProb(groundtruth_train,wanted_chord_list=chord_list,chord_dir=CHORD_DIR)
