@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from network import CNN_Audio
+from CNN.network import CNN_Audio
 from sklearn.utils import shuffle
 from constant import *
 # # @tf.function(reduce_retracing=True)
@@ -46,7 +46,7 @@ from constant import *
 #         idx+=1
 #     # return neural_network.data
 
-def train(neural_network:CNN_Audio,input_data,groundtruth_data,input_test,groundtruth_test,learning_rate_map,samples):
+def train(neural_network:CNN_Audio,input_data,groundtruth_data,input_valid,groundtruth_valid,learning_rate_map):
     """
     0. desc: performing train on the dataset
     1. params:
@@ -59,6 +59,7 @@ def train(neural_network:CNN_Audio,input_data,groundtruth_data,input_test,ground
     3. return: [chord result]
     """
     idx=0
+    loss_lst=[]
     for epoch,learning_rate in learning_rate_map:
         #find current learning rate
         neural_network.SetLearning_rate(learning_rate)
@@ -72,16 +73,31 @@ def train(neural_network:CNN_Audio,input_data,groundtruth_data,input_test,ground
                 groundtruth=groundtruth_data_array[j]
                 with tf.GradientTape() as t:
                     neural_network.forward(input)
-                    neural_network.backward(groundtruth,t)
+                    loss=neural_network.backward(groundtruth,t)
+                    loss_lst.append(loss)
             print(neural_network.evaluate(groundtruth_data_array))
+            min_loss,max_loss=np.argmin(loss_lst),np.argmax(loss_lst)
+            print("Min loss: ", loss_lst[min_loss],' ',min_loss)
+            print("Max loss: ", loss_lst[max_loss],' ',max_loss)
+            print("Avg loss: ", np.average(loss_lst))
+            loss_lst.clear()
             neural_network.clear_data()
             #testing
-            input_test_array=np.array_split(input_test,neural_network.batches)
-            groundtruth_test_array=np.array_split(groundtruth_test,neural_network.batches)
-            for input in input_test_array:
-                neural_network.forward(input)
-            print(neural_network.evaluate(groundtruth_test_array))
-            neural_network.clear_data()
+            if input_valid is not None and groundtruth_valid is not None:
+                input_test_array=np.array_split(input_valid,neural_network.batches)
+                groundtruth_test_array=np.array_split(groundtruth_valid,neural_network.batches)
+                for j in range(len(input_test_array)):
+                    input=input_test_array[j]
+                    groundtruth=groundtruth_test_array[j]
+                    neural_network.forward(input,False)
+                    loss_lst.append(neural_network.loss_cal(groundtruth).numpy())
+                min_loss,max_loss=np.argmin(loss_lst),np.argmax(loss_lst)
+                print("Testing "+neural_network.evaluate(groundtruth_test_array))
+                print("Testing Min loss: ", loss_lst[min_loss],' ',min_loss)
+                print("Testing Max loss: ", loss_lst[max_loss],' ',max_loss)
+                print("Testing Avg loss: ", np.average(loss_lst))
+                loss_lst.clear()
+                neural_network.clear_data()
         idx+=1
     # return neural_network.data
 

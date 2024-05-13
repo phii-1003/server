@@ -13,11 +13,6 @@ from constant import *
 def get_nested_circle_of_fifths():
     chords = [
         "N",
-        "G:maj",
-        "G#:maj",
-        "A:maj",
-        "A#:maj",
-        "B:maj",
         "C:maj",
         "C#:maj",
         "D:maj",
@@ -25,11 +20,11 @@ def get_nested_circle_of_fifths():
         "E:maj",
         "F:maj",
         "F#:maj",
-        "G:min",
-        "G#:min",
-        "A:min",
-        "A#:min",
-        "B:min",
+        "G:maj",
+        "G#:maj",
+        "A:maj",
+        "A#:maj",
+        "B:maj",
         "C:min",
         "C#:min",
         "D:min",
@@ -37,8 +32,15 @@ def get_nested_circle_of_fifths():
         "E:min",
         "F:min",
         "F#:min",
+        "G:min",
+        "G#:min",
+        "A:min",
+        "A#:min",
+        "B:min",
     ]
     nested_cof = [
+        "C:maj",
+        "E:min",
         "G:maj",
         "B:min",
         "D:maj",
@@ -61,8 +63,6 @@ def get_nested_circle_of_fifths():
         "D:min",
         "F:maj",
         "A:min",
-        "C:maj",
-        "E:min",
     ]
     return chords, nested_cof
 

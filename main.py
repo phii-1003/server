@@ -17,15 +17,14 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     _, nested_cof = get_nested_circle_of_fifths()
     #input process
     
-    input_data=preprocessAudioFile(input=input_dir,hop_length=hop_length)[0]
-
+    input_data=preprocessAudioFile(input=input_dir,hop_length=hop_length,window_length=19)[0]
     #CNN:
     samples=input_data.shape[0]
     # divided_batch_num=math.ceil(samples/BATCH) #for GPU
-    divided_batch_num=int(samples/BATCH) #for CPU
+    divided_batch_num=samples #for CPU
     neural_network=CNN_Audio(input_data.shape,chord_list,network_map,divided_batch_num,nodes_map)
     neural_network.load_params(postfix)
-    neural_network.forward(input_data,False)
+    neural_network.forward(input_data,is_training=False)
     
     if groundtruth_dir!=None:
         groundtruth_data,_,_=preprocessGroundTruthFile(groundtruth_dir,samples,chord_list,CHORD_DICT_2,NOTES_DICT,window_length=1.9,octave_shift=[0],change=False)
@@ -47,7 +46,7 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     neural_network.clear_data()
     #HMM:
     templates=list(chromagram_dict.values())
-    nFrames=samples
+    nFrames=chroma_data.shape[1]
     (PI, A, B) = hmm.initialize(chroma_data, np.array(templates), chord_list[:-1], nested_cof) 
     (path, states) = hmm.viterbi(PI, A, B)
 
@@ -72,8 +71,7 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
         else:
             final_states[i] = states[indices[i], i]
             final_chords.append(chord_list[int(final_states[i])])
-    # for i in none_idx:
-    #     final_chords.insert(i,"N")
+
     acc=np.count_nonzero([a==b for a,b in zip(groundtruth_chord,final_chords)])/len(groundtruth_chord)
     print("Final accuracy: ",acc*100,"%")
     return final_chords

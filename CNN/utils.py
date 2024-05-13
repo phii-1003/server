@@ -102,6 +102,18 @@ def KernelGenHelper(kernel_param,option="Gabor",information={}):
                     k+=1
         return res
 
+def shuffle_data(input:np.ndarray,grountruth:np.ndarray):
+    """
+    0.desc: shuffle input and groundtruth in the same order
+    1.params:
+    input: input data
+    groudntruth: groundtruth data
+    2.options:
+    3.return: input(shuffled), groundtruth(shuffled)
+    """
+    arr_len=input.shape[0]
+    permutation=np.random.permutation(arr_len)
+    return input[permutation],grountruth[permutation]
 def Hz_to_MIDI(Hz):
     """
     0.desc: transfer hertz t0 note (69 equals midi note A4)

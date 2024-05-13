@@ -4,10 +4,10 @@ import numpy as np
 import pandas as pd
 import json
 import os
-
-def calChordProb(chord_dir,wanted_chord_list,postfix):
+import jams
+import math
+def calChordProb(groundtruth_train,wanted_chord_list,chord_dir):
     chord_prob_dict={k:0 for k in wanted_chord_list}
-    groundtruth_train=np.load(chord_dir+'train_groundtruth'+postfix+".npy")
     total_frames=groundtruth_train.shape[0]
     groundtruth_train_value=np.argmax(groundtruth_train,axis=1)
     for val in groundtruth_train_value:
@@ -18,7 +18,43 @@ def calChordProb(chord_dir,wanted_chord_list,postfix):
         json.dump(chord_prob_dict, outfile)
     print(total_frames)
     print(chord_prob_dict)
-
+def fixChordProb(groundtruth_train,wanted_chord_list,delete_amount=25000):
+    #aim: fix number of major chords
+    delete_chord_idxs=[]
+    prev_val=-1
+    major_idxs=[]
+    major_chord_delete_count={wanted_chord_list[i]:0 for i in range(len(wanted_chord_list)) if i%2==0}
+    chord_prob_dict={k:0 for k in wanted_chord_list}
+    total_frames=groundtruth_train.shape[0]
+    groundtruth_train_value=np.argmax(groundtruth_train,axis=1)
+        
+    for i in range(len(groundtruth_train_value)):
+        val=groundtruth_train_value[i]
+        chord_prob_dict[wanted_chord_list[val]]+=1
+        if len(delete_chord_idxs)>=delete_amount:
+            break
+        if val%2==0: #major
+            # if major_chord_delete_count[wanted_chord_list[val]]<delete_amount/10:
+            #     if prev_val!=val:
+            #         prev_val=val
+            #         delete_chord_idxs.append(i)
+            #         chord_prob_dict[wanted_chord_list[val]]-=1
+            #         major_chord_delete_count[wanted_chord_list[val]]+=1
+            #         total_frames-=1
+            #     else:
+            #         prev_val=-1
+            major_idxs.append(i)
+    while len(delete_chord_idxs)<delete_amount:
+        i=np.random.randint(0,len(major_idxs))
+        val=major_idxs[i]
+        if val not in delete_chord_idxs:
+            delete_chord_idxs.append(val)
+            chord_prob_dict[wanted_chord_list[groundtruth_train_value[val]]]-=1
+            major_chord_delete_count[wanted_chord_list[groundtruth_train_value[val]]]+=1
+            total_frames-=1
+    print(total_frames)
+    print(chord_prob_dict)
+    return delete_chord_idxs
 
 def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes_dict,wanted_chord_list,hop_length,window_frames,postfix,octave_shift=[-1,0,1],usage="test"):
     """
@@ -52,16 +88,16 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
             for j,k in zip(audio_list,chord_list):
                 print(j)
                 audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift)
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
 
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
                 #         start,end=idx_lst
                 #         for  audio_idx in range(len(audio)):
                 #             if start!=0:
-                #                 audio[audio_idx][idx,:,:start,:]=0
+                #                 audio[audio_idx][idx,:,:start,:]=1/12
                 #             if end!=0:
-                #                 audio[audio_idx][idx,:,-1*end:,:]=0
+                #                 audio[audio_idx][idx,:,-1*end:,:]=1/12
 
                 if len(remove_idxs)!=0: #remove audio
                     for audio_idx in range(len(audio)):
@@ -70,8 +106,10 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 input_res+=audio
                 SAMPLES_COUNT+=input_res[-1].shape[0]*len(octave_shift)
                 print("Samples processed: ",SAMPLES_COUNT)
-                if audio[-1].shape[0]!=groundtruth_res[-1].shape[0]:
+                if audio[-1].shape[0]!=groundtruth_res[-1].shape[0] or len(chord)!=len(audio):
                     print("Error in this file")
+                    print("Shape: ",audio[-1].shape,groundtruth_res[-1].shape)
+                    print("Shifts: ",len(chord),len(audio))
                 else:
                     print("All clear")
         elif int(i)>15 and int(i)<17: #silence sounds in 16th folder (from freesound.com)
@@ -80,16 +118,16 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
             for j,k in zip(audio_list,chord_list):
                 print(j)
                 audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=window_frames,hop_length=hop_length,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12])
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12])
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12],change=True)
 
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
                 #         start,end=idx_lst
                 #         for  audio_idx in range(len(audio)):
                 #             if start!=0:
-                #                 audio[audio_idx][idx,:,:start,:]=0
+                #                 audio[audio_idx][idx,:,:start,:]=1e-6
                 #             if end!=0:
-                #                 audio[audio_idx][idx,:,-1*end:,:]=0
+                #                 audio[audio_idx][idx,:,-1*end:,:]=1e-6
 
                 if len(remove_idxs)!=0: #remove audio
                     for audio_idx in range(len(audio)):
@@ -98,28 +136,29 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 input_res+=audio
                 SAMPLES_COUNT+=input_res[-1].shape[0]*6
                 print("Samples processed: ",SAMPLES_COUNT)
-                if audio[-1].shape[0]!=groundtruth_res[-1].shape[0]:
+                if audio[-1].shape[0]!=groundtruth_res[-1].shape[0] or len(chord)!=len(audio):
                     print("Error in this file")
+                    print("Shape: ",audio[-1].shape,groundtruth_res[-1].shape)
+                    print("Shifts: ",len(chord),len(audio))
                 else:
                     print("All clear")
-        else: #data from IDMT-SMT. Link: https://zenodo.org/records/7544213
+        elif int(i)<=18 and int(i)>=17: #data from IDMT-SMT. Link: https://zenodo.org/records/7544213
             k=chord_list[0]
             for j in audio_list:
                 print(j)
-                # audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=20,octave_shift=[item*2 for item in octave_shift if not isinstance(item*2, float)])
-                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=20,hop_length=hop_length,octave_shift=[-2,-1,0,1,2])
+
+                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=math.ceil(window_frames/10)*10,hop_length=hop_length,octave_shift=[-2,-1,0,1,2])
                 for l in range(len(audio)):
                     audio[l]=audio[l][:,:,:-1,:]
-                # chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],window_length=2.0,wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=[item*2 for item in octave_shift if not isinstance(item*2, float)])
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],window_length=2.0,wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=[-2,-1,0,1,2])
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],window_length=math.ceil((hop_length/44100)*window_frames),wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=[-2,-1,0,1,2],change=True)
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
                 #         start,end=idx_lst
                 #         for  audio_idx in range(len(audio)):
                 #             if start!=0:
-                #                 audio[audio_idx][idx,:,:start,:]=0
+                #                 audio[audio_idx][idx,:,:start,:]=1e-6
                 #             if end!=0:
-                #                 audio[audio_idx][idx,:,-1*end:,:]=0
+                #                 audio[audio_idx][idx,:,-1*end:,:]=1e-6
 
                 if len(remove_idxs)!=0: #remove audio
                     for audio_idx in range(len(audio)):
@@ -128,8 +167,40 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 input_res+=audio
                 SAMPLES_COUNT+=input_res[-1].shape[0]*5#length of octave shift for folder 17 and 18
                 print("Samples processed: ",SAMPLES_COUNT) 
-                if audio[-1].shape[0]!=groundtruth_res[-1].shape[0]:
+                if audio[-1].shape[0]!=groundtruth_res[-1].shape[0] or len(chord)!=len(audio):
                     print("Error in this file")
+                    print("Shape: ",audio[-1].shape,groundtruth_res[-1].shape)
+                    print("Shifts: ",len(chord),len(audio))
+                else:
+                    print("All clear")
+        else: #data from GuitarSet. Link: https://zenodo.org/records/3371780
+            if len(audio_list)!=len(chord_list):
+                raise Exception('Input data is missing either audio files or chord files')
+            for j,k in zip(audio_list,chord_list):
+                print(j)
+                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
+
+                # if bool(padding_dict): #pad audio
+                #     for idx,idx_lst in padding_dict.items():
+                #         start,end=idx_lst
+                #         for  audio_idx in range(len(audio)):
+                #             if start!=0:
+                #                 audio[audio_idx][idx,:,:start,:]=1e-6
+                #             if end!=0:
+                #                 audio[audio_idx][idx,:,-1*end:,:]=1e-6
+
+                if len(remove_idxs)!=0: #remove audio
+                    for audio_idx in range(len(audio)):
+                        audio[audio_idx]=np.delete(audio[audio_idx],remove_idxs,0)
+                groundtruth_res+=chord
+                input_res+=audio
+                SAMPLES_COUNT+=input_res[-1].shape[0]*len(octave_shift)
+                print("Samples processed: ",SAMPLES_COUNT)
+                if audio[-1].shape[0]!=groundtruth_res[-1].shape[0] or len(chord)!=len(audio):
+                    print("Error in this file")
+                    print("Shape: ",audio[-1].shape,groundtruth_res[-1].shape)
+                    print("Shifts: ",len(chord),len(audio))
                 else:
                     print("All clear")
     data,groundtruth= np.concatenate(input_res,axis=0),np.concatenate(groundtruth_res,axis=0)
@@ -180,11 +251,17 @@ def preprocessChord(source_list:list[str],interval_list:dict,notes_dict):
         else:
             interval=i[colon_idx+1:end_interval_idx]
             #bass=i[bass_idx+1:]
-        alter_interval=interval_list[interval]
-        res.append(root+':'+alter_interval)
+        if interval in interval_list.keys():
+            alter_interval=interval_list[interval]
+        else:
+            alter_interval='X'
+        if alter_interval!='X':
+            res.append(root+':'+alter_interval)
+        else:
+            res.append(alter_interval)
     return res
         
-def preprocessGroundTruthFile(groundtruth,total_windows,wanted_chord_list:list[str],chord_dict,notes_dict,window_length=1.9,octave_shift=[-1,0,1],change=False):
+def preprocessGroundTruthFile(groundtruth:str,total_windows,wanted_chord_list:list[str],chord_dict,notes_dict,window_length=1.9,octave_shift=[-1,0,1],change=False):
     """
     0. desc: preproccess groundtruth data to chunks of chord in each windows (multiple frames combine)
     1. params:
@@ -197,13 +274,23 @@ def preprocessGroundTruthFile(groundtruth,total_windows,wanted_chord_list:list[s
     2. options: exist a value called No_Chord
     3. return: np.array([chord propability list] (61*1 or 85*1))
     """
-    groundtruth_data=pd.read_csv(groundtruth,header=None,delimiter=' ')
-    #for folders 13,14,15
-    if groundtruth_data.shape[1]==1:
-        groundtruth_data=pd.read_csv(groundtruth,header=None,delimiter='\t')
-    start_time=groundtruth_data[0].to_numpy()
-    end_time=groundtruth_data[1].to_numpy()
-    chord=preprocessChord(groundtruth_data[2],chord_dict,notes_dict)
+    #check file extension
+    extension=groundtruth[groundtruth.rfind('.')+1:]
+    if extension=="lab":
+        groundtruth_data=pd.read_csv(groundtruth,header=None,delimiter=' ')
+        #for folders 13,14,15
+        if groundtruth_data.shape[1]==1:
+            groundtruth_data=pd.read_csv(groundtruth,header=None,delimiter='\t')
+        start_time=groundtruth_data[0].to_numpy()
+        end_time=groundtruth_data[1].to_numpy()
+        chord=preprocessChord(groundtruth_data[2],chord_dict,notes_dict)
+    elif extension=="jams":
+        groundtruth_data=jams.load(groundtruth)
+        groundtruth_data=groundtruth_data.search(namespace='chord')[-1]
+        groundtruth_data=groundtruth_data.to_interval_values()
+        start_time=groundtruth_data[0][:,0]
+        end_time=groundtruth_data[0][:,1]
+        chord=preprocessChord(groundtruth_data[1],chord_dict,notes_dict)
     if total_windows*window_length>end_time[-1]:
         start_time=np.append(start_time,end_time[-1])
         end_time=np.append(end_time,total_windows*window_length)
@@ -223,19 +310,19 @@ def preprocessGroundTruthFile(groundtruth,total_windows,wanted_chord_list:list[s
             if end_time[idx]>=(i+1)*window_length:
                 if change:
                     if len(chord_appeared)==1: # adding window
-                        if chord_appeared[0]=="N": 
-                            # remove_idxs.append(i)#remove N chord
-                            res_str.append(chord_appeared[0]) #add N chord
+                        if chord_appeared[0]=="N" or chord_appeared[0]=="X": 
+                            remove_idxs.append(i)#remove N chord and X chord (X means unidentified)
+                            # res_str.append(chord_appeared[0]) #add N chord
                         else:
                             res_str.append(chord_appeared[0])
                     else:
                         max_duration=max(duration_appeared)
-                        if max_duration>=window_length*0.8: #padding windows
+                        if max_duration>=window_length*0.85: #padding windows
                             max_duration_idx=duration_appeared.index(max_duration)
-                            if chord_appeared[max_duration_idx]=="N":
-                                # remove_idxs.append(i)#remove N chord
-                                res_str.append(chord_appeared[max_duration_idx]) #add N chord
-                                padding_dict[i]=[int(sum(duration_appeared[:max_duration_idx]*10)),0 if max_duration_idx==len(duration_appeared)-1 else int(sum(duration_appeared[max_duration_idx:]*10))] #add N chord
+                            if chord_appeared[max_duration_idx]=="N" or chord_appeared[max_duration_idx]=="X":
+                                remove_idxs.append(i)#remove N chord
+                                # res_str.append(chord_appeared[max_duration_idx]) #add N chord
+                                # padding_dict[i]=[int(sum(duration_appeared[:max_duration_idx]*10)),0 if max_duration_idx==len(duration_appeared)-1 else int(sum(duration_appeared[max_duration_idx:]*10))] #add N chord
                             else:
                                 res_str.append(chord_appeared[max_duration_idx])
                                 padding_dict[i]=[int(sum(duration_appeared[:max_duration_idx]*10)),0 if max_duration_idx==len(duration_appeared)-1 else int(sum(duration_appeared[max_duration_idx:]*10))]
@@ -285,8 +372,8 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
     for octave in octave_shift:
         y_shifted=librosa.effects.pitch_shift(y,sr=sr,n_steps=octave*12)
         fmin = librosa.midi_to_hz(28) #min frequency that the transform hold, which is E1
-        CQT = librosa.cqt(y_shifted, sr=sr, fmin=fmin, bins_per_octave=bins_per_octave,n_bins=total_bins, hop_length=hop_length)
-        realNumberCQT=np.abs(CQT).astype('float32')# consider add gaussian: window=("gaussian",stdd=0.65) (stdd may change))
+        CQT = librosa.feature.chroma_cqt(y=y_shifted, sr=sr, fmin=fmin, bins_per_octave=bins_per_octave,n_octaves=int(total_bins/bins_per_octave), hop_length=hop_length)
+        realNumberCQT=CQT# consider add gaussian: window=("gaussian",stdd=0.65) (stdd may change))
         if realNumberCQT.shape[1]%window_length!=0:
             realNumberCQT= np.pad(realNumberCQT,[(0,0),(0,window_length-realNumberCQT.shape[1]%window_length)])
         res.append( np.reshape(realNumberCQT,(int(realNumberCQT.shape[1]/window_length),realNumberCQT.shape[0],window_length,1)) )

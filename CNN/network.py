@@ -7,6 +7,15 @@ from CNN.utils import KernelGen,BiasGen
 # from utils import KernelGen,BiasGen
 from constant import OUTPUT_DIR,CHORD_DIR
 from create_templates import create_chromagram_dict
+class MyLRSchedule(keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, initial_learning_rate,decay_step):
+        self.learning_rate = initial_learning_rate
+        self.decay=0.9
+        self.decay_step=decay_step
+    def setLR(self,lr):
+        self.learning_rate=lr
+    def __call__(self, step):
+        return self.learning_rate*math.pow(self.decay,step/self.decay_step)
 class CNN_Audio(tf.Module):
     def __init__(self,input_param,chords_list,network_map,batch_number,nodes_map,**kwargs):
         """
@@ -62,17 +71,18 @@ class CNN_Audio(tf.Module):
         # else:
         self.w=[tf.Variable(i,dtype='float32') for i in kernelGen] #[layer,height,width,inChannels,quantity]
         self.b=[tf.Variable(i,dtype='float32') for i in biasGen]
-        self.learning_rate=0.001
+        self.learning_rate=MyLRSchedule(0.001,26)
 
         #used in backward
         ## for batch normalization
-        self.beta=[tf.Variable(0,dtype='float32') for _ in biasGen]#offset
-        self.gamma=[tf.Variable(1,dtype='float32') for _ in biasGen]#scale
-
+        # self.beta=[tf.Variable(0,dtype='float32') for _ in biasGen]#offset
+        # self.gamma=[tf.Variable(1,dtype='float32') for _ in biasGen]#scale
+        self.beta=[tf.Variable(0,dtype='float32')]#offset
+        self.gamma=[tf.Variable(1,dtype='float32')]#scale
         #for ema
         self.alpha=0.5 #smooth factor
-        self.ema_mean=[math.nan for _ in biasGen]
-        self.ema_variance=[math.nan for _ in biasGen]
+        self.ema_mean=[math.nan for _ in self.beta]
+        self.ema_variance=[math.nan for _ in self.beta]
 
         self.loss=keras.losses.CategoricalCrossentropy()
         self.optimizer=keras.optimizers.Adam(self.learning_rate)
@@ -89,25 +99,37 @@ class CNN_Audio(tf.Module):
         """
         tmp_res=input_data
         conv_counter=0
+        def checkErr(tens):
+            if tf.reduce_any(tf.math.is_nan(tens)):
+                print("Nan is here")
+            if tf.reduce_any(tf.math.is_inf(tens)):
+                print("Inf is here")
+        def calEMA(prev,x):
+            return self.alpha*(prev-x)+x if x is not math.nan else prev
         for i in range(0,self.layers):
             if self.network[i]=="conv":
                 tmp_res=tf.nn.conv2d(tmp_res,self.w[conv_counter],self.stride[i],self.padding[i])+self.b[conv_counter]
-                if is_training:
-                    mean,variance=tf.nn.moments(tmp_res,[0])
-                    self.ema_mean[conv_counter]=self.alpha*(mean-self.ema_mean[conv_counter])+self.ema_mean[conv_counter]
-                    self.ema_variance[conv_counter]=self.alpha*(mean-self.ema_variance[conv_counter])+self.ema_variance[conv_counter]
-                    tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=None,scale=None,variance_epsilon=1e-6)
-                else:
-                    mean=self.ema_mean[conv_counter]
-                    variance=self.ema_variance[conv_counter]
-                tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=self.beta[conv_counter],scale=self.gamma[conv_counter],variance_epsilon=1e-6)
-                conv_counter+=1
+                # checkErr(tmp_res)
+                if conv_counter==1:
+                    if is_training:
+                        mean,variance=tf.nn.moments(tmp_res,[0])
+                        self.ema_mean[0]=tf.stop_gradient(calEMA(mean,self.ema_mean[0]))
+                        self.ema_variance[0]=tf.stop_gradient(calEMA(variance,self.ema_variance[0]))
+                    else:
+                        mean=self.ema_mean[0]
+                        variance=self.ema_variance[0] #negative mean and var element causes nan. Use this in report
+                    tmp_res=tf.nn.batch_normalization(x=tmp_res,mean=mean,variance=variance,offset=self.beta[0],scale=self.gamma[0],variance_epsilon=1e-4)
+                # checkErr(tmp_res)
                 if self.activations[i]=="reLU":
                     tmp_res=tf.nn.relu(tmp_res)
                 #these 2 lines are customized just for my CNN structure
                 # if i<3 and is_training:
                 if is_training:
-                    tmp_res=tf.nn.dropout(tmp_res,0.2)
+                    # if conv_counter<2:
+                    #     tmp_res=tf.nn.dropout(tmp_res,0.25)
+                    # else:
+                    tmp_res=tf.nn.dropout(tmp_res,0.3)
+                conv_counter+=1
             elif self.network[i]=="pool-max":
                 tmp_res=tf.nn.max_pool(tmp_res,self.kernels_map[i],self.stride[i],self.padding[i])
             elif self.network[i]=="pool-avg":
@@ -117,7 +139,8 @@ class CNN_Audio(tf.Module):
         #fitting
         self.data.append(tf.squeeze(tmp_res))     
     
-
+    def loss_cal(self,groundtruth_data):
+        return self.loss.__call__(groundtruth_data,self.data[-1])
     def backward(self,groundtruth_data,t:tf.GradientTape):
         """
         0. desc: back to the first layer once for the last data batch
@@ -127,14 +150,11 @@ class CNN_Audio(tf.Module):
         2. return: nothing.Update kernels and bias
         3.Note: 
         """
-        cross_entropy=self.loss.__call__(groundtruth_data,self.data[-1])
+
+        cross_entropy=self.loss_cal(groundtruth_data)
         self.optimizer.minimize(cross_entropy,self.b+self.w+self.beta+self.gamma,t)
-        # dw,db=t.gradient(cross_entropy,[self.w,self.b])
-        # # self.optimizer.apply_gradients([(dw,self.w),(db,self.b)])
-        # for i in range(len(self.w)):
-        #     self.w[i].assign_sub(self.learning_rate*dw[i])
-        # for i in range(len(self.b)):
-        #     self.b[i].assign_sub(self.learning_rate*db[i])
+        # self.optimizer.minimize(cross_entropy,self.b+self.w,t)
+        return cross_entropy.numpy()
     
 
     def evaluate(self,groundtruth_data_array):
@@ -150,8 +170,11 @@ class CNN_Audio(tf.Module):
         # groundtruth_data, predicted_idx, num_classes=self.chords_count)
         # evaluation_step = tf.reduce_mean(tf.cast(predicted_idx, tf.float32))
         # tf.summary.scalar('accuracy', evaluation_step)
-        print(len(self.data))
+        # print(len(self.data))
         full_data= tf.concat(self.data,axis=0)
+        print(full_data.numpy())
+        # for i in self.w:
+        #     print(i.numpy())
         # groundtruth_data_array_numpy=list(groundtruth_data_array.unbatch().as_numpy_iterator()) #for GPU
         groundtruth_data_array_numpy=tf.concat(groundtruth_data_array,axis=0) #for CPU
         predicted_value=tf.argmax(full_data,axis=1)
@@ -175,18 +198,25 @@ class CNN_Audio(tf.Module):
         for i in range(len(self.w)):
             np.save(OUTPUT_DIR+"kernel_"+str(i)+postfix,self.w[i])
             np.save(OUTPUT_DIR+"bias_"+str(i)+postfix,self.b[i])
+        for i in range(len(self.beta)):
             np.save(OUTPUT_DIR+"beta_"+str(i)+postfix,self.beta[i])
             np.save(OUTPUT_DIR+"gamma_"+str(i)+postfix,self.gamma[i])
             np.save(OUTPUT_DIR+"ema_mean_"+str(i)+postfix,self.ema_mean[i])
             np.save(OUTPUT_DIR+"ema_var_"+str(i)+postfix,self.ema_variance[i])
-
     
     #helper functions
-    def toChordProb(self,chord_list,min=0.2):
+    def delete_ema(self):
+        self.ema_mean=[math.nan for _ in self.ema_mean]
+        self.ema_variance=[math.nan for _ in self.ema_variance]
+    def toChordProb(self):
         f1=open(CHORD_DIR+"chord_prob_dict.json")
-        chords_prob_lst=json.load(f1).values()
+        chords_prob_lst=np.array(list(json.load(f1).values()),dtype='float32')
         full_data= tf.concat(self.data,axis=0)
+        print(full_data.numpy())
+        predicted_value=full_data.numpy()
         predicted_value=full_data.numpy()/chords_prob_lst
+        # for i in range(len(predicted_value)):
+        #     predicted_value[i,:]/=sum(predicted_value[i,:])
         return predicted_value
     def load_params(self,postfix):
         """
@@ -200,6 +230,7 @@ class CNN_Audio(tf.Module):
         for i in range(len(self.b)):
             self.b[i]=np.load(OUTPUT_DIR+"bias_"+str(i)+postfix+".npy")
             self.w[i]=np.load(OUTPUT_DIR+"kernel_"+str(i)+postfix+".npy")
+        for i in range(len(self.beta)):
             self.beta[i]=np.load(OUTPUT_DIR+"beta_"+str(i)+postfix+".npy")
             self.gamma[i]=np.load(OUTPUT_DIR+"gamma_"+str(i)+postfix+".npy")
             self.ema_mean[i]=np.load(OUTPUT_DIR+"ema_mean_"+str(i)+postfix+".npy")
@@ -207,6 +238,6 @@ class CNN_Audio(tf.Module):
     def clear_data(self):
         self.data=[]
     def SetLearning_rate(self,learning_rate):
-        self.learning_rate=learning_rate
+        self.learning_rate.setLR(learning_rate)
     def SetDataSize(self,batches):
         self.data=[0 for i in range(batches)]
