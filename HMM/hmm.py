@@ -35,8 +35,16 @@ def initialize(chroma, templates, chords, nested_cof):
     PI = np.ones(num_chords) / num_chords
 
     """initialising A based on nested circle of fifths"""
-    eps = 0.01
+    eps = 0.001
     A = np.empty((num_chords, num_chords))
+    # for i in range(num_chords):
+    #     cof_idx=nested_cof.index(chords[i])
+    #     for idx in range(len(nested_cof)):
+    #         chords_idx=chords.index(nested_cof[idx])
+    #         distance=min(24-abs(cof_idx-chords_idx),abs(cof_idx-chords_idx))
+    #         A[i][idx] = (num_chords//2-distance+eps) / (
+    #             (num_chords//2)**2 + num_chords * eps
+    #         )
     for chord in chords:
         ind = nested_cof.index(chord)
         t = ind
@@ -44,7 +52,7 @@ def initialize(chroma, templates, chords, nested_cof):
             if t >= num_chords:
                 t = t % num_chords
             A[ind][t] = (abs(num_chords // 2 - i) + eps) / (
-                num_chords**2 + num_chords * eps
+                (num_chords//2)**2 + num_chords * eps
             )
             t += 1
 
@@ -57,12 +65,12 @@ def initialize(chroma, templates, chords, nested_cof):
     meu_mat = np.zeros((num_chords, num_chords // 2))
     cov_mat = np.zeros((num_chords, num_chords // 2, num_chords // 2))
     meu_mat = np.array(templates)
-    offset = 0
+    cof_idx = 0
 
     for i in range(num_chords):
         if i == num_chords // 2:
-            offset = 0
-        tonic = offset
+            cof_idx = 0
+        tonic = cof_idx
         if i < num_chords // 2:
             mediant = (tonic + 4) % (num_chords // 2)
         else:
@@ -86,7 +94,7 @@ def initialize(chroma, templates, chords, nested_cof):
         for j in range(num_chords // 2):
             if cov_mat[i, j, j] == 0:
                 cov_mat[i, j, j] = 0.2
-        offset += 1
+        cof_idx += 1
 
     """observation matrix B is a multivariate Gaussian calculated from mean vector and 
     covariance matrix"""

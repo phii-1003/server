@@ -152,15 +152,16 @@ NETWORK_MAP_BIG_7=[
 
 NODES_MAP_COMPACT_2=[
 12*19,
-24*10*17,
-24*7*14,
-24*5*12,
+24*12*5,
+24*10*3,
+24*8*1,
 24*1*1]
 NETWORK_MAP_COMPACT_2=[
-    ["conv","reLU",(3,3,1,12),(1,1),"VALID"],
-    ["conv","reLU",(4,4,12,3),(1,1),"VALID"],
-    ["conv","reLU",(3,3,3,24),(1,1),"VALID"],
-    ["pool-avg",None,(5,12),(1,1),"VALID"],
+    ["pool-avg",None,(1,7),(1,3),"VALID"],
+    ["conv","reLU",(3,3,1,24),(1,1),"SAME"],
+    ["conv","reLU",(3,3,24,4),(1,1),"VALID"],
+    ["conv","reLU",(3,3,4,24),(1,1),"VALID"],
+    ["pool-avg",None,(8,1),(1,1),"VALID"],
     ["softmax",None,None,None,None]
 ]
 

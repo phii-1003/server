@@ -13,7 +13,7 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     nodes_map=NODES_MAP_COMPACT_2
     hop_length=4410
     chord_list=ChordListGen(NOTES,innotation) +["N"]
-    chromagram_dict=create_chromagram_dict(chord_list=chord_list)
+    chromagram_dict=create_chromagram_dict(chord_list=chord_list,min=0.1)
     _, nested_cof = get_nested_circle_of_fifths()
     #input process
     

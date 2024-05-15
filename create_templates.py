@@ -77,13 +77,13 @@ def create_chromagram_dict(chord_list,to_json=False,min=0.2):
     """
     chromagram_dict = dict()
     for chord in chord_list:
-        chromagram=[min]*12
+        chromagram=[min for _ in range(12)]
         colon=chord.find(':')
         if colon!=-1:
             note_idx=NOTES.index(chord[:colon])
             scale=CHROMAGRAM_DICT[chord[colon+1:]]
             for i in scale:
-                chromagram[(note_idx+i)%12]=1-min
+                chromagram[(note_idx+i)%12]=1
         chromagram_dict[chord]=chromagram
     # initialise lists with zeros
     # for chord in range(num_chords):

@@ -27,11 +27,14 @@ def main(option="training",innotation=INNOTATION_2,postfix=POSTFIX_1_9_2,network
     delete_idxs_train=fixChordProb(groundtruth_train,wanted_chord_list=chord_list,amount=7000) #notes: the more balance the data are, the better CNN performs
     input_train=np.delete(input_train,delete_idxs_train,axis=0)
     groundtruth_train=np.delete(groundtruth_train,delete_idxs_train,axis=0)
-    ##add minor chords from pretrain data
-    add_idxs_from_pretrain=fixChordProb(groundtruth_pretrain,wanted_chord_list=chord_list,amount=6200,delete=False)
-    input_train=np.concatenate((input_train,input_pretrain[add_idxs_from_pretrain]))
-    groundtruth_train=np.concatenate((groundtruth_train,groundtruth_pretrain[add_idxs_from_pretrain]))
+    
+    # ##add minor chords from pretrain data
+    # add_idxs_from_pretrain=fixChordProb(groundtruth_pretrain,wanted_chord_list=chord_list,amount=6300,delete=False)
+    # input_train=np.concatenate((input_train,input_pretrain[add_idxs_from_pretrain]))
+    # groundtruth_train=np.concatenate((groundtruth_train,groundtruth_pretrain[add_idxs_from_pretrain]))
+
     calChordProb(groundtruth_train,wanted_chord_list=chord_list,chord_dir=CHORD_DIR)
+
     if option=="training":
         print("Input train size: ",input_train.shape,"Input valid size: ",input_valid.shape)
         print("Groundtruth train size: ",groundtruth_train.shape,"Groundtruth valid size: ",groundtruth_valid.shape )

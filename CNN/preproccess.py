@@ -144,14 +144,15 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 else:
                     print("All clear")
         elif int(i)<=18 and int(i)>=17: #data from IDMT-SMT. Link: https://zenodo.org/records/7544213
+            octave_shift_2=[-2,-1,-1/2,0,3/4,1,2]
             k=chord_list[0]
             for j in audio_list:
                 print(j)
 
-                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=math.ceil(window_frames/10)*10,hop_length=hop_length,octave_shift=[-2,-1,0,1,2])
+                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=math.ceil(window_frames/10)*10,hop_length=hop_length,octave_shift=octave_shift_2)
                 for l in range(len(audio)):
                     audio[l]=audio[l][:,:,:-1,:]
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],window_length=math.ceil((hop_length/44100)*window_frames),wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=[-2,-1,0,1,2],change=True)
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],window_length=math.ceil((hop_length/44100)*window_frames),wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=octave_shift_2,change=True)
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
                 #         start,end=idx_lst
@@ -166,7 +167,7 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                         audio[audio_idx]=np.delete(audio[audio_idx],remove_idxs,0)
                 groundtruth_res+=chord
                 input_res+=audio
-                SAMPLES_COUNT+=input_res[-1].shape[0]*5#length of octave shift for folder 17 and 18
+                SAMPLES_COUNT+=input_res[-1].shape[0]*len(octave_shift_2)#length of octave shift for folder 17 and 18
                 print("Samples processed: ",SAMPLES_COUNT) 
                 if audio[-1].shape[0]!=groundtruth_res[-1].shape[0] or len(chord)!=len(audio):
                     print("Error in this file")
@@ -340,14 +341,14 @@ def preprocessGroundTruthFile(groundtruth:str,total_windows,wanted_chord_list:li
                 idx+=1
     res_prob_list=[np.zeros((len(res_str),len(wanted_chord_list)))for _ in range(len(octave_shift))]
     shifted_chord_list=wanted_chord_list if len(wanted_chord_list)%12==0 else wanted_chord_list[:-1] #remove "N chord" for shifting
-    innotaion_num=len(shifted_chord_list)/12
+    innotation_num=len(shifted_chord_list)/12
     for shift_idx in range(len(octave_shift)):
         for res_str_idx in range(len(res_str)):
             idx=wanted_chord_list.index(res_str[res_str_idx])
             if idx==len(shifted_chord_list) or isinstance(octave_shift[shift_idx],int):
                 idx=idx
             else:
-                idx=int((shifted_chord_list.index(res_str[res_str_idx])+innotaion_num*12*octave_shift[shift_idx])%24)
+                idx=int((shifted_chord_list.index(res_str[res_str_idx])+int(innotation_num*12*octave_shift[shift_idx]))%24)
             res_prob_list[shift_idx][res_str_idx][idx]=1
             
     
