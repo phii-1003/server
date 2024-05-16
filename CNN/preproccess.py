@@ -6,7 +6,7 @@ import json
 import os
 import jams
 import math
-
+import scipy.ndimage
 def calChordProb(groundtruth_train,wanted_chord_list,chord_dir):
     chord_prob_dict={k:0 for k in wanted_chord_list}
     total_frames=groundtruth_train.shape[0]
@@ -75,6 +75,7 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
     2. options: write file into Audio/data.csv and Chord/groundtruth.csv; dupplicate no chord zone
     3. return: input_data,groundtruth_data
     """
+    slash='\\'
     DUPLICATE_NUM=20
     SAMPLES_COUNT=0
     input_res=[]
@@ -88,8 +89,8 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 raise Exception('Input data is missing either audio files or chord files')
             for j,k in zip(audio_list,chord_list):
                 print(j)
-                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
+                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
 
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
@@ -118,8 +119,8 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 raise Exception('Input data is missing either audio files or chord files')
             for j,k in zip(audio_list,chord_list):
                 print(j)
-                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=window_frames,hop_length=hop_length,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12])
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12],change=True)
+                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12])
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12],change=True)
 
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
@@ -144,15 +145,15 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 else:
                     print("All clear")
         elif int(i)<=18 and int(i)>=17: #data from IDMT-SMT. Link: https://zenodo.org/records/7544213
-            octave_shift_2=[-2,-1,-1/2,0,3/4,1,2]
+            octave_shift_2=[-1,-3/4,-1/2,0,3/4,1,2]
             k=chord_list[0]
             for j in audio_list:
                 print(j)
 
-                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=math.ceil(window_frames/10)*10,hop_length=hop_length,octave_shift=octave_shift_2)
+                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=math.ceil(window_frames/10)*10,hop_length=hop_length,octave_shift=octave_shift_2)
                 for l in range(len(audio)):
                     audio[l]=audio[l][:,:,:-1,:]
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],window_length=math.ceil((hop_length/44100)*window_frames),wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=octave_shift_2,change=True)
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],window_length=math.ceil((hop_length/44100)*window_frames),wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=octave_shift_2,change=True)
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
                 #         start,end=idx_lst
@@ -180,8 +181,8 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 raise Exception('Input data is missing either audio files or chord files')
             for j,k in zip(audio_list,chord_list):
                 print(j)
-                audio=preprocessAudioFile(audio_dir+i+'\\'+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
-                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+'\\'+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
+                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
+                chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
 
                 # if bool(padding_dict): #pad audio
                 #     for idx,idx_lst in padding_dict.items():
@@ -372,12 +373,17 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
     res=[]
     y, sr = librosa.load(input, sr=sample_rate)
     for octave in octave_shift:
-        y_shifted=librosa.effects.pitch_shift(y,sr=sr,n_steps=octave*12)
+        y_shifted=librosa.effects.pitch_shift(y,sr=sr,n_steps=octave*12) if octave!=0 else y
         fmin = librosa.midi_to_hz(28) #min frequency that the transform hold, which is E1
-        CQT = librosa.feature.chroma_cqt(y=y_shifted, sr=sr, fmin=fmin, bins_per_octave=bins_per_octave,n_octaves=int(total_bins/bins_per_octave), hop_length=hop_length)
-        realNumberCQT=CQT# consider add gaussian: window=("gaussian",stdd=0.65) (stdd may change))
-        if realNumberCQT.shape[1]%window_length!=0:
-            realNumberCQT= np.pad(realNumberCQT,[(0,0),(0,window_length-realNumberCQT.shape[1]%window_length)])
-        res.append( np.reshape(realNumberCQT,(int(realNumberCQT.shape[1]/window_length),realNumberCQT.shape[0],window_length,1)) )
+        y_harmonic=librosa.effects.harmonic(y=y_shifted,margin=8)
+        chroma_CQT_harmonic = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, fmin=fmin, bins_per_octave=bins_per_octave,n_octaves=int(total_bins/bins_per_octave), hop_length=hop_length)
+        chroma_CQT_filter = np.minimum(chroma_CQT_harmonic,librosa.decompose.nn_filter(chroma_CQT_harmonic,aggregate=np.median,metric='cosine'))
+        chroma_CQT_smooth = scipy.ndimage.median_filter(chroma_CQT_filter, size=(1, 9))
+        if chroma_CQT_smooth.shape[1]%window_length!=0:
+            chroma_CQT_smooth= np.pad(chroma_CQT_smooth,[(0,0),(0,window_length-chroma_CQT_smooth.shape[1]%window_length)])
+        samples=int(chroma_CQT_smooth.shape[1]/window_length)
+        append_res=np.array(np.split(chroma_CQT_smooth,samples,axis=1))
+        append_res=np.expand_dims(append_res,axis=(3))
+        res.append( append_res)
     return res
     
