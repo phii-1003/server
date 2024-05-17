@@ -35,26 +35,26 @@ def initialize(chroma, templates, chords, nested_cof):
     PI = np.ones(num_chords) / num_chords
 
     """initialising A based on nested circle of fifths"""
-    eps = 0.001
+    eps = 0.01
     A = np.empty((num_chords, num_chords))
-    # for i in range(num_chords):
-    #     cof_idx=nested_cof.index(chords[i])
-    #     for idx in range(len(nested_cof)):
-    #         chords_idx=chords.index(nested_cof[idx])
-    #         distance=min(24-abs(cof_idx-chords_idx),abs(cof_idx-chords_idx))
-    #         A[i][idx] = (num_chords//2-distance+eps) / (
+    for i in range(num_chords):
+        cof_idx=nested_cof.index(chords[i])
+        for idx in range(len(nested_cof)):
+            chords_idx=chords.index(nested_cof[idx])
+            distance=min(24-abs(cof_idx-chords_idx),abs(cof_idx-chords_idx))
+            A[i][idx] = (num_chords//2-distance+eps) / (
+                num_chords**2 + num_chords * eps
+            )
+    # for chord in chords:
+    #     ind = nested_cof.index(chord)
+    #     t = ind
+    #     for i in range(num_chords):
+    #         if t >= num_chords:
+    #             t = t % num_chords
+    #         A[ind][t] = (abs(num_chords // 2 - i) + eps) / (
     #             (num_chords//2)**2 + num_chords * eps
     #         )
-    for chord in chords:
-        ind = nested_cof.index(chord)
-        t = ind
-        for i in range(num_chords):
-            if t >= num_chords:
-                t = t % num_chords
-            A[ind][t] = (abs(num_chords // 2 - i) + eps) / (
-                (num_chords//2)**2 + num_chords * eps
-            )
-            t += 1
+    #         t += 1
 
     """initialising based on tonic triads - Mean matrix; Tonic with dominant - 0.8,
     tonic with mediant 0.6 and mediant-dominant 0.8, non-triad diagonal elements 

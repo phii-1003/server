@@ -1,5 +1,5 @@
 #############################CNN TRAIN####################################
-BATCH=240
+BATCH=260
 
 POSTFIX_0_95_2="_0_95_2"
 POSTFIX_1_9_2="_1_9_2"
@@ -19,8 +19,8 @@ LEARNING_RATE_MAP_PRETRAIN=[
 ]
 
 LEARNING_RATE_MAP=[
-    (10,5e-4),
-    (5,4e-4),
+    (10,7e-4),
+    (5,5e-4),
 ]
 
 NODES_MAP_BIG_2=[
@@ -120,10 +120,10 @@ NETWORK_MAP_BIG_7=[
 # 24*4*5,
 # 24*1*1]
 # NETWORK_MAP_COMPACT_2=[
-#     ["conv","reLU",(3,3,1,120),(1,1),"VALID"],
-#     ["conv","reLU",(3,3,120,120),(1,1),"VALID"],
+#     ["conv","reLU",(3,3,1,24),(1,1),"VALID"],
+#     ["conv","reLU",(3,3,24,24),(1,1),"VALID"],
 #     ["pool-max",None,(2,3),(2,3),"VALID"],
-#     ["conv","linear",(1,1,120,24),(1,1),"VALID"],
+#     ["conv","linear",(1,1,24,24),(1,1),"VALID"],
 #     ["pool-avg",None,(4,5),(1,1),"VALID"],
 #     ["softmax",None,None,None,None]
 # ]
@@ -151,17 +151,13 @@ NETWORK_MAP_BIG_7=[
 # ]
 
 NODES_MAP_COMPACT_2=[
-12*19,
-24*12*5,
-24*10*3,
-24*8*1,
-24*1*1]
+    12*19,
+    24*1*19,
+    24*1*1
+]
 NETWORK_MAP_COMPACT_2=[
-    ["pool-avg",None,(1,7),(1,3),"VALID"],
-    ["conv","reLU",(3,3,1,24),(1,1),"SAME"],
-    ["conv","reLU",(3,3,24,4),(1,1),"VALID"],
-    ["conv","reLU",(3,3,4,24),(1,1),"VALID"],
-    ["pool-avg",None,(8,1),(1,1),"VALID"],
+    ["conv","reLU",(12,1,1,24),(1,1),"VALID"],
+    ["pool-avg",None,(1,19),(1,1),"VALID"],
     ["softmax",None,None,None,None]
 ]
 

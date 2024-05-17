@@ -49,6 +49,8 @@ def fixChordProb(groundtruth,wanted_chord_list,amount=25000,delete=True):
         i=np.random.randint(0,len(chord_alter_idxs))
         val=chord_alter_idxs[i]
         if val not in alter_chord_idxs:
+            if chord_alter_count[wanted_chord_list[groundtruth_train_value[val]]]>=amount/12:
+                continue
             alter_chord_idxs.append(val)
             chord_prob_dict[wanted_chord_list[groundtruth_train_value[val]]]-=1
             chord_alter_count[wanted_chord_list[groundtruth_train_value[val]]]+=1
@@ -358,7 +360,7 @@ def preprocessGroundTruthFile(groundtruth:str,total_windows,wanted_chord_list:li
     #     res_prob_list[i,idx]=1
     return res_prob_list,remove_idxs,padding_dict
 
-def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave=24,total_bins=144,hop_length=2205,octave_shift=[0]):
+def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave=24,total_bins=144,hop_length=2205,octave_shift=[0],expand=False):
     """
     0. desc: preproccess input data - audio file - to output - mel spectrogram
     1. params:
@@ -382,8 +384,16 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
         if chroma_CQT_smooth.shape[1]%window_length!=0:
             chroma_CQT_smooth= np.pad(chroma_CQT_smooth,[(0,0),(0,window_length-chroma_CQT_smooth.shape[1]%window_length)])
         samples=int(chroma_CQT_smooth.shape[1]/window_length)
-        append_res=np.array(np.split(chroma_CQT_smooth,samples,axis=1))
-        append_res=np.expand_dims(append_res,axis=(3))
-        res.append( append_res)
+        append_res=[]
+        if expand:
+            for sample in range(samples):
+                tmp_res=np.concatenate([np.expand_dims(np.max(chroma_CQT_smooth[:,samp:min(samp+3,samples*window_length)],axis=1),axis=1) for samp in range(sample*19,sample*19+19)],axis=1)
+                append_res.append(tmp_res)
+            append_res=np.array(append_res)
+            append_res=np.expand_dims(append_res,axis=(3))
+        else:
+            append_res=np.array(np.split(chroma_CQT_smooth,samples,axis=1))
+            append_res=np.expand_dims(append_res,axis=(3))
+        res.append(append_res)
     return res
     

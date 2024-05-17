@@ -67,7 +67,7 @@ def KernelGen(kernel_map,nodes_map):
             continue
         if i<3:
             if len(kernel_map[i])>=4:
-                res.append(KernelGenHelper(kernel_map[i],option="Gabor"))
+                res.append(KernelGenHelper(kernel_map[i],option="Kaimming",information={'nodes':nodes_map[i]}))
         else:
             if len(kernel_map[i])>=4:
                 res.append(KernelGenHelper(kernel_map[i],option="Kaimming",information={'nodes':nodes_map[i]}))

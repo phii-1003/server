@@ -13,11 +13,11 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     nodes_map=NODES_MAP_COMPACT_2
     hop_length=4410
     chord_list=ChordListGen(NOTES,innotation) +["N"]
-    chromagram_dict=create_chromagram_dict(chord_list=chord_list,min=0.1)
+    chromagram_dict=create_chromagram_dict(chord_list=chord_list)
     _, nested_cof = get_nested_circle_of_fifths()
     #input process
     
-    input_data=preprocessAudioFile(input=input_dir,hop_length=hop_length,window_length=19)[0]
+    input_data=preprocessAudioFile(input=input_dir,hop_length=hop_length,window_length=19,expand=False)[0]
     #CNN:
     samples=input_data.shape[0]
     # divided_batch_num=math.ceil(samples/BATCH) #for GPU
@@ -60,7 +60,7 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     final_states = np.zeros(nFrames)
 
     # find no chord zone
-    set_zero = np.where(np.max(path, axis=0) < 0.3 * np.max(path))[0]
+    set_zero = np.where(np.max(path, axis=0) < 0.35 * np.max(path))[0]
     if np.size(set_zero) > 0:
         indices[set_zero] = -1
 
@@ -71,15 +71,19 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
         else:
             final_states[i] = states[indices[i], i]
             final_chords.append(chord_list[int(final_states[i])])
-
-    acc=np.count_nonzero([a==b for a,b in zip(groundtruth_chord,final_chords)])/len(groundtruth_chord)
-    print("Final accuracy: ",acc*100,"%")
+    if groundtruth_dir!=None:
+        acc=np.count_nonzero([a==b for a,b in zip(groundtruth_chord,final_chords)])/len(groundtruth_chord)
+        print("Final accuracy: ",acc*100,"%")
     return final_chords
 
-res=main("08 Within You Without You.mp3","08_-_Within_You_Without_You.lab")
+# res=main("audio2.mp3",None)
+# print(res)
+res=main("CNN/Groundtruth/Audio/08/08 Within You Without You.mp3","CNN/Groundtruth/Chord/08/08_-_Within_You_Without_You.lab")
 print(res)
-res=main("09. You Never Give Me Your Money.mp3","09_-_You_Never_Give_Me_Your_Money.lab")
+res=main("CNN/Groundtruth/Audio/02/11 - I Wanna Be Your Man.mp3","CNN/Groundtruth/Chord/02/11_-_I_Wanna_Be_Your_Man.lab")
 print(res)
-res=main("02_Misery.mp3","02_-_Misery.lab")
+res=main("CNN/Groundtruth/Audio/11/09. You Never Give Me Your Money.mp3","CNN/Groundtruth/Chord/11/09_-_You_Never_Give_Me_Your_Money.lab")
+print(res)
+res=main("CNN/Groundtruth/Audio/01/02_Misery.mp3","CNN/Groundtruth/Chord/01/02_-_Misery.lab")
 print(res)
 ###B is currently 12-D, Change B to 25-D? Or replace mutirivate gaussian to bayes prob for init B (remove N chord prob)

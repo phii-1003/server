@@ -66,7 +66,7 @@ def get_nested_circle_of_fifths():
     ]
     return chords, nested_cof
 
-def create_chromagram_dict(chord_list,to_json=False,min=0.2):
+def create_chromagram_dict(chord_list,to_json=False,low=0.2,high=1,peak=1):
     """
     0. desc: create chromagrams from a list of chords
     1. param:
@@ -77,13 +77,16 @@ def create_chromagram_dict(chord_list,to_json=False,min=0.2):
     """
     chromagram_dict = dict()
     for chord in chord_list:
-        chromagram=[min for _ in range(12)]
+        chromagram=[low for _ in range(12)]
         colon=chord.find(':')
         if colon!=-1:
             note_idx=NOTES.index(chord[:colon])
             scale=CHROMAGRAM_DICT[chord[colon+1:]]
             for i in scale:
-                chromagram[(note_idx+i)%12]=1
+                if i==0:
+                    chromagram[(note_idx+i)%12]=peak
+                else:
+                    chromagram[(note_idx+i)%12]=high
         chromagram_dict[chord]=chromagram
     # initialise lists with zeros
     # for chord in range(num_chords):

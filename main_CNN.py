@@ -24,7 +24,7 @@ def main(option="training",innotation=INNOTATION_2,postfix=POSTFIX_1_9_2,network
     groundtruth_valid=np.load(CHORD_DIR+'valid_groundtruth'+postfix+'.npy')
     #fix chord imbalance
     ##delete major chords
-    delete_idxs_train=fixChordProb(groundtruth_train,wanted_chord_list=chord_list,amount=7000) #notes: the more balance the data are, the better CNN performs
+    delete_idxs_train=fixChordProb(groundtruth_train,wanted_chord_list=chord_list,amount=4200) #notes: the more balance the data are, the better CNN performs
     input_train=np.delete(input_train,delete_idxs_train,axis=0)
     groundtruth_train=np.delete(groundtruth_train,delete_idxs_train,axis=0)
     
@@ -44,8 +44,8 @@ def main(option="training",innotation=INNOTATION_2,postfix=POSTFIX_1_9_2,network
 
         neural_network=CNN_Audio(input_train.shape,chord_list,network_map,divided_batch_num,nodes_map)
         #pretrain
-        train(neural_network,input_pretrain,groundtruth_pretrain,None,None,LEARNING_RATE_MAP_PRETRAIN)
-        neural_network.delete_ema()
+        # train(neural_network,input_pretrain,groundtruth_pretrain,None,None,LEARNING_RATE_MAP_PRETRAIN)
+        # neural_network.delete_ema()
         #train
         train(neural_network,input_train,groundtruth_train,input_valid,groundtruth_valid,LEARNING_RATE_MAP)
 
