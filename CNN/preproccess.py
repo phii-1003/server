@@ -12,12 +12,12 @@ def calChordProb(groundtruth_train,wanted_chord_list,chord_dir):
     total_frames=groundtruth_train.shape[0]
     groundtruth_train_value=np.argmax(groundtruth_train,axis=1)
     for val in groundtruth_train_value:
-        chord_prob_dict[wanted_chord_list[val]]+=1
+        chord_prob_dict[wanted_chord_list[val]]+=1 if val%2==1 else 1
     #save chord prob
+    print(chord_prob_dict)
     chord_prob_dict={k:v/total_frames for k,v in chord_prob_dict.items()}
     with open(chord_dir+"chord_prob_dict.json", "w") as outfile: 
         json.dump(chord_prob_dict, outfile)
-    print(total_frames)
     print(chord_prob_dict)
 def fixChordProb(groundtruth,wanted_chord_list,amount=25000,delete=True):
     #aim: fix number of major chords
@@ -55,8 +55,6 @@ def fixChordProb(groundtruth,wanted_chord_list,amount=25000,delete=True):
             chord_prob_dict[wanted_chord_list[groundtruth_train_value[val]]]-=1
             chord_alter_count[wanted_chord_list[groundtruth_train_value[val]]]+=1
             total_frames-=1
-    print(total_frames)
-    print(chord_prob_dict)
     return alter_chord_idxs
 
 def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes_dict,wanted_chord_list,hop_length,window_frames,postfix,octave_shift=[-1,0,1],usage="test"):
@@ -360,7 +358,7 @@ def preprocessGroundTruthFile(groundtruth:str,total_windows,wanted_chord_list:li
     #     res_prob_list[i,idx]=1
     return res_prob_list,remove_idxs,padding_dict
 
-def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave=24,total_bins=144,hop_length=2205,octave_shift=[0],expand=False):
+def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave=24,total_bins=24*6,hop_length=2205,octave_shift=[0],expand=False):
     """
     0. desc: preproccess input data - audio file - to output - mel spectrogram
     1. params:
@@ -374,6 +372,11 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
     """
     res=[]
     y, sr = librosa.load(input, sr=sample_rate)
+    if expand:
+        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+        tempo = librosa.feature.tempo(onset_envelope=onset_env, sr=sr)
+        mean_tempo=np.mean(tempo)
+        hop_length=int(90/(mean_tempo)*hop_length)
     for octave in octave_shift:
         y_shifted=librosa.effects.pitch_shift(y,sr=sr,n_steps=octave*12) if octave!=0 else y
         fmin = librosa.midi_to_hz(28) #min frequency that the transform hold, which is E1
@@ -381,19 +384,20 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
         chroma_CQT_harmonic = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, fmin=fmin, bins_per_octave=bins_per_octave,n_octaves=int(total_bins/bins_per_octave), hop_length=hop_length)
         chroma_CQT_filter = np.minimum(chroma_CQT_harmonic,librosa.decompose.nn_filter(chroma_CQT_harmonic,aggregate=np.median,metric='cosine'))
         chroma_CQT_smooth = scipy.ndimage.median_filter(chroma_CQT_filter, size=(1, 9))
+        # chroma_CQT_smooth=chroma_CQT_filter
         if chroma_CQT_smooth.shape[1]%window_length!=0:
             chroma_CQT_smooth= np.pad(chroma_CQT_smooth,[(0,0),(0,window_length-chroma_CQT_smooth.shape[1]%window_length)])
         samples=int(chroma_CQT_smooth.shape[1]/window_length)
         append_res=[]
-        if expand:
-            for sample in range(samples):
-                tmp_res=np.concatenate([np.expand_dims(np.max(chroma_CQT_smooth[:,samp:min(samp+3,samples*window_length)],axis=1),axis=1) for samp in range(sample*19,sample*19+19)],axis=1)
-                append_res.append(tmp_res)
-            append_res=np.array(append_res)
-            append_res=np.expand_dims(append_res,axis=(3))
-        else:
-            append_res=np.array(np.split(chroma_CQT_smooth,samples,axis=1))
-            append_res=np.expand_dims(append_res,axis=(3))
+        # if expand:
+        #     for sample in range(samples):
+        #         tmp_res=np.concatenate([np.expand_dims(np.max(chroma_CQT_smooth[:,samp:min(samp+10,samples*window_length)],axis=1),axis=1) for samp in range(sample*19,sample*19+19)],axis=1)
+        #         append_res.append(tmp_res)
+        #     append_res=np.array(append_res)
+        #     append_res=np.expand_dims(append_res,axis=(3))
+        # else:
+        append_res=np.array(np.split(chroma_CQT_smooth,samples,axis=1))
+        append_res=np.expand_dims(append_res,axis=(3))
         res.append(append_res)
-    return res
+    return res,hop_length
     

@@ -2,9 +2,6 @@
 'A mid level representation for harmonic content in music signals'
 @author ORCHISAMA DAS, 2016"""
 
-from __future__ import division
-from HMM.chromagram import compute_chroma
-import os
 import numpy as np
 
 
@@ -38,12 +35,12 @@ def initialize(chroma, templates, chords, nested_cof):
     eps = 0.01
     A = np.empty((num_chords, num_chords))
     for i in range(num_chords):
-        cof_idx=nested_cof.index(chords[i])
-        for idx in range(len(nested_cof)):
-            chords_idx=chords.index(nested_cof[idx])
-            distance=min(24-abs(cof_idx-chords_idx),abs(cof_idx-chords_idx))
-            A[i][idx] = (num_chords//2-distance+eps) / (
-                num_chords**2 + num_chords * eps
+        cof_idx_root=nested_cof.index(chords[i])
+        for idx in range(num_chords):
+            cof_idx_target=nested_cof.index(chords[idx])
+            distance=min(24-abs(cof_idx_root-cof_idx_target),abs(cof_idx_root-cof_idx_target))
+            A[i][idx] = ((num_chords//2-distance)+eps) / (
+                (num_chords//2)**2 + num_chords * eps
             )
     # for chord in chords:
     #     ind = nested_cof.index(chord)
@@ -52,7 +49,7 @@ def initialize(chroma, templates, chords, nested_cof):
     #         if t >= num_chords:
     #             t = t % num_chords
     #         A[ind][t] = (abs(num_chords // 2 - i) + eps) / (
-    #             (num_chords//2)**2 + num_chords * eps
+    #             num_chords**2 + num_chords * eps
     #         )
     #         t += 1
 
@@ -65,12 +62,12 @@ def initialize(chroma, templates, chords, nested_cof):
     meu_mat = np.zeros((num_chords, num_chords // 2))
     cov_mat = np.zeros((num_chords, num_chords // 2, num_chords // 2))
     meu_mat = np.array(templates)
-    cof_idx = 0
+    cof_idx_root = 0
 
     for i in range(num_chords):
         if i == num_chords // 2:
-            cof_idx = 0
-        tonic = cof_idx
+            cof_idx_root = 0
+        tonic = cof_idx_root
         if i < num_chords // 2:
             mediant = (tonic + 4) % (num_chords // 2)
         else:
@@ -94,7 +91,7 @@ def initialize(chroma, templates, chords, nested_cof):
         for j in range(num_chords // 2):
             if cov_mat[i, j, j] == 0:
                 cov_mat[i, j, j] = 0.2
-        cof_idx += 1
+        cof_idx_root += 1
 
     """observation matrix B is a multivariate Gaussian calculated from mean vector and 
     covariance matrix"""
@@ -105,7 +102,6 @@ def initialize(chroma, templates, chords, nested_cof):
     #             chroma[:, m], meu_mat[n, :], cov_mat[n, :, :]
     #         )
     B=chroma
-    print(B.shape,A.shape,PI.shape)
     return (PI, A, B)
 
 
@@ -117,12 +113,12 @@ def viterbi(PI, A, B):
     path = np.zeros((nrow, ncol))
     states = np.zeros((nrow, ncol))
     path[:, 0] = PI * B[:, 0]
-
+    path[:,0]/=sum(path[:,0])
     for i in range(1, ncol):
         for j in range(nrow):
             s = [(path[k, i - 1] * A[k, j] * B[j, i], k) for k in range(nrow)]
             (prob, state) = max(s)
             path[j, i] = prob
             states[j, i - 1] = state
-
+        path[:,i]/=sum(path[:,i])
     return (path, states)

@@ -217,9 +217,9 @@ AUDIO_DIR="/mnt/e/Local code/Official work/CNN/Groundtruth/Audio/"
 CHORD_DIR="/mnt/e/Local code/Official work/CNN/Groundtruth/Chord/"
 OUTPUT_DIR="/mnt/e/Local code/Official work/CNN/Output/"
 
-# AUDIO_DIR="CNN\\Groundtruth\\Audio\\"
-# CHORD_DIR="CNN\\Groundtruth\\Chord\\"
-# OUTPUT_DIR="CNN\\Output\\"
+AUDIO_DIR="CNN\\Groundtruth\\Audio\\"
+CHORD_DIR="CNN\\Groundtruth\\Chord\\"
+OUTPUT_DIR="CNN\\Output\\"
 
 ######################COMMON######################
 CHROMAGRAM_DICT={'maj':[0,4,7],'min':[0,3,7],'maj7':[0,4,7,11],'min7':[0,3,7,10],'7':[0,4,7,10],'dim':[0,3,6],'sus4':[0,5,7]}

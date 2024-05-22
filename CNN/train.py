@@ -92,7 +92,7 @@ def train(neural_network:CNN_Audio,input_data,groundtruth_data,input_valid,groun
                     neural_network.forward(input,False)
                     loss_lst.append(neural_network.loss_cal(groundtruth).numpy())
                 min_loss,max_loss=np.argmin(loss_lst),np.argmax(loss_lst)
-                print("Testing "+neural_network.evaluate(groundtruth_test_array))
+                print("Testing accuracy: "+str(neural_network.evaluate(groundtruth_test_array).numpy()) + '%')
                 print("Testing Min loss: ", loss_lst[min_loss],' ',min_loss)
                 print("Testing Max loss: ", loss_lst[max_loss],' ',max_loss)
                 print("Testing Avg loss: ", np.average(loss_lst))

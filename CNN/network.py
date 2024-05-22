@@ -64,7 +64,7 @@ class CNN_Audio(tf.Module):
         self.data=[] #is used to store forward result in one train session
 
         # kernelGen=KernelGen(self.kernels_map,nodes_map) #[layer,height,width,inChannels,quantity].Note: only create kernel for conv layers
-        chromagram=list(create_chromagram_dict(chords_list,to_json=False,low=-0.1,high=0.8,peak=0.9).values())
+        chromagram=list(create_chromagram_dict(chords_list,to_json=False,low=0.07,high=0.7,peak=0.9,neighbor_penalty=-0.25).values())
         kernelGen=[np.expand_dims(np.array(chromagram).T,axis=(1,2))]
         biasGen=BiasGen(self.kernels_map)#Note: only create bias for conv layers
         # if load!=None:
@@ -72,7 +72,7 @@ class CNN_Audio(tf.Module):
         #     self.w=[tf.Variable(np.load(OUTPUT_DIR+"kernel_"+str(i)+load+".npy"),dtype='float32') for i in range(len(kernelGen))]
         # else:
         self.w=[tf.Variable(i,dtype='float32') for i in kernelGen] #[layer,height,width,inChannels,quantity]
-        self.b=[tf.Variable(i,dtype='float32') for i in biasGen]
+        # self.b=[tf.Variable(i,dtype='float32') for i in biasGen]
         self.learning_rate=MyLRSchedule(0.001,20)
 
         #used in backward
@@ -82,7 +82,7 @@ class CNN_Audio(tf.Module):
         self.beta=[tf.Variable(0,dtype='float32')]#offset
         self.gamma=[tf.Variable(1,dtype='float32')]#scale
         #for ema
-        self.alpha=0.8 #smooth factor
+        self.alpha=0.75 #smooth factor
         self.ema_mean=[math.nan for _ in self.beta]
         self.ema_variance=[math.nan for _ in self.beta]
 
@@ -111,7 +111,7 @@ class CNN_Audio(tf.Module):
             return self.alpha*(prev-x)+x if x is not math.nan else prev
         for i in range(0,self.layers):
             if self.network[i]=="conv":
-                tmp_res=tf.nn.conv2d(tmp_res,self.w[conv_counter],self.stride[i],self.padding[i])+self.b[conv_counter]
+                tmp_res=tf.nn.conv2d(tmp_res,self.w[conv_counter],self.stride[i],self.padding[i])
                 # checkErr(tmp_res)
                 # checkErr(tmp_res)
                 # if conv_counter==0:
@@ -129,7 +129,7 @@ class CNN_Audio(tf.Module):
                     # if conv_counter<2:
                     #     tmp_res=tf.nn.dropout(tmp_res,0.25)
                     # else:
-                    tmp_res=tf.nn.dropout(tmp_res,0.2)
+                    tmp_res=tf.nn.dropout(tmp_res,0.15)
                 conv_counter+=1
             elif self.network[i]=="pool-max":
                 tmp_res=tf.nn.max_pool(tmp_res,self.kernels_map[i],self.stride[i],self.padding[i])
@@ -153,8 +153,8 @@ class CNN_Audio(tf.Module):
         """
 
         cross_entropy=self.loss_cal(groundtruth_data)
-        # self.optimizer.minimize(cross_entropy,self.b+self.w+self.beta+self.gamma,t)
-        self.optimizer.minimize(cross_entropy,self.b+self.w,t)
+        # self.optimizer.minimize(cross_entropy,self.w+self.beta+self.gamma,t)
+        self.optimizer.minimize(cross_entropy,self.w,t)
         return cross_entropy.numpy()
     
 
@@ -178,11 +178,10 @@ class CNN_Audio(tf.Module):
         # groundtruth_data_array_numpy=list(groundtruth_data_array.unbatch().as_numpy_iterator()) #for GPU
         groundtruth_data_array_numpy=tf.concat(groundtruth_data_array,axis=0) #for CPU
         predicted_value=tf.argmax(full_data,axis=1)
-        print(predicted_value)
         groundtruth_value=tf.argmax(groundtruth_data_array_numpy,axis=1)
         # confusion_matrix=tf.math.confusion_matrix(groundtruth_value,predicted_value,self.chords_count)
         accuracy=tf.reduce_mean(tf.cast(tf.equal(predicted_value,groundtruth_value),tf.float32))
-        return "Accuracy: {}%".format(accuracy*100)
+        return accuracy*100
 
     def store(self,postfix):
         """
@@ -198,7 +197,7 @@ class CNN_Audio(tf.Module):
         # kernel_numpy=np.array(kernel_tensor_list) #for GPU
         for i in range(len(self.w)):
             np.save(OUTPUT_DIR+"kernel_"+str(i)+postfix,self.w[i])
-            np.save(OUTPUT_DIR+"bias_"+str(i)+postfix,self.b[i])
+            # np.save(OUTPUT_DIR+"bias_"+str(i)+postfix,self.b[i])
         for i in range(len(self.beta)):
             np.save(OUTPUT_DIR+"beta_"+str(i)+postfix,self.beta[i])
             np.save(OUTPUT_DIR+"gamma_"+str(i)+postfix,self.gamma[i])
@@ -217,7 +216,6 @@ class CNN_Audio(tf.Module):
 
         # for i in range(len(predicted_value)):
         #     predicted_value[i,:]/=sum(predicted_value[i,:])
-        print(predicted_value)
         return predicted_value
     def load_params(self,postfix):
         """
@@ -228,10 +226,9 @@ class CNN_Audio(tf.Module):
         3.Note: weight numpy array has dimension (kernel_idx,height,width,inChannels,quantity); bias has dim (bias_idx,kernelQuantity)
         """
         #Note: must check manually if the number of kernels and bias is equal to the number of layer
-        for i in range(len(self.b)):
-            self.b[i]=np.load(OUTPUT_DIR+"bias_"+str(i)+postfix+".npy")
+        for i in range(len(self.w)):
+            # self.b[i]=np.load(OUTPUT_DIR+"bias_"+str(i)+postfix+".npy")
             self.w[i]=np.load(OUTPUT_DIR+"kernel_"+str(i)+postfix+".npy")
-            # print(self.w[i])
         for i in range(len(self.beta)):
             self.beta[i]=np.load(OUTPUT_DIR+"beta_"+str(i)+postfix+".npy")
             self.gamma[i]=np.load(OUTPUT_DIR+"gamma_"+str(i)+postfix+".npy")
