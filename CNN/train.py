@@ -3,48 +3,6 @@ import numpy as np
 from CNN.network import CNN_Audio
 from sklearn.utils import shuffle
 from constant import *
-# # @tf.function(reduce_retracing=True)
-# def train_help(neural_network:CNN_Audio,data,idx,i,learning_rate):
-#     print("Epoch round {}, no.{} with learning rate {}".format(idx,i,learning_rate))
-#         # #shuffle and split data
-#     input_data_shuffled=data.map(lambda x,y: x)
-#     groundtruth_data_shuffled=data.map(lambda x,y: y)
-#     input_data_array=input_data_shuffled.batch(BATCH)
-#     groundtruth_data_array=groundtruth_data_shuffled.batch(BATCH)
-
-#     for input,groundtruth in tf.data.Dataset.zip(input_data_array,groundtruth_data_array):
-#         # input=input_data_array[j]
-#         # groundtruth=groundtruth_data_array[j]
-#         with tf.GradientTape() as t:
-#             neural_network.forward(input)
-#             neural_network.backward(groundtruth,t)
-#     print(neural_network.evaluate(groundtruth_data_array))
-#     neural_network.clear_data()
-
-# def train(neural_network:CNN_Audio,input_data,groundtruth_data,learning_rate_map,samples):
-#     """
-#     0. desc: performing train on the dataset
-#     1. params:
-#     neural_network: network object
-#     input_data: audio data
-#     groundtruth_data_array: groundtruth data
-#     learning_rate_map
-#     samples: number of data
-#     2. options: split input and groundtruth into batches
-#     3. return: [chord result]
-#     """
-#     data=tf.data.Dataset.from_tensor_slices((input_data,groundtruth_data))
-#     data=data.shuffle(buffer_size=data.cardinality(),reshuffle_each_iteration=True)
-    
-#     idx=0
-#     for epoch,learning_rate in learning_rate_map:
-#         #find current learning rate
-#         neural_network.SetLearning_rate(learning_rate)
-#         for i in range(epoch):
-#             train_help(neural_network,data,idx,i,neural_network.learning_rate)
-            
-#         idx+=1
-#     # return neural_network.data
 
 def train(neural_network:CNN_Audio,input_data,groundtruth_data,input_valid,groundtruth_valid,learning_rate_map):
     """

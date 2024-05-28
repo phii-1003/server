@@ -89,7 +89,7 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 raise Exception('Input data is missing either audio files or chord files')
             for j,k in zip(audio_list,chord_list):
                 print(j)
-                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
+                audio,_=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
                 chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
 
                 # if bool(padding_dict): #pad audio
@@ -119,7 +119,7 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 raise Exception('Input data is missing either audio files or chord files')
             for j,k in zip(audio_list,chord_list):
                 print(j)
-                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12])
+                audio,_=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12])
                 chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=[-6/12,-2/12,0,3/12,5/12,7/12],change=True)
 
                 # if bool(padding_dict): #pad audio
@@ -145,12 +145,12 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 else:
                     print("All clear")
         elif int(i)<=18 and int(i)>=17: #data from IDMT-SMT. Link: https://zenodo.org/records/7544213
-            octave_shift_2=[-1,-3/4,-1/2,0,3/4,1,2]
+            octave_shift_2=[-2,-3/2,-1,0,1,3/2,2]
             k=chord_list[0]
             for j in audio_list:
                 print(j)
 
-                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=math.ceil(window_frames/10)*10,hop_length=hop_length,octave_shift=octave_shift_2)
+                audio,_=preprocessAudioFile(audio_dir+i+slash+j,window_length=math.ceil(window_frames/10)*10,hop_length=hop_length,octave_shift=octave_shift_2)
                 for l in range(len(audio)):
                     audio[l]=audio[l][:,:,:-1,:]
                 chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],window_length=math.ceil((hop_length/44100)*window_frames),wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,octave_shift=octave_shift_2,change=True)
@@ -181,7 +181,7 @@ def preprocessData(album_idx_list:list[str],audio_dir,chord_dir,chord_dict,notes
                 raise Exception('Input data is missing either audio files or chord files')
             for j,k in zip(audio_list,chord_list):
                 print(j)
-                audio=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
+                audio,_=preprocessAudioFile(audio_dir+i+slash+j,window_length=window_frames,hop_length=hop_length,octave_shift=octave_shift)
                 chord,remove_idxs,padding_dict=preprocessGroundTruthFile(chord_dir+i+slash+k,audio[0].shape[0],wanted_chord_list=wanted_chord_list,notes_dict=notes_dict,chord_dict=chord_dict,window_length=(hop_length/44100)*window_frames,octave_shift=octave_shift,change=True)
 
                 # if bool(padding_dict): #pad audio
@@ -365,18 +365,19 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
     input(.mp4,.wav,...): audio file dir
     window_length (int): number of frames in each window
     octave_shift: list of octave shifting 
-    2. options: cast type to float32
+    2. options: cast type to float32; with expand=True, assume time signature is 4-> each window frame duration is equal 4 beat
     CQT;each frame last 0.1 seconds based on hop_length 4410 and sr 44100 
     3. return: [data(batches,height,width,channels=1)]
     4. Note: needs to install ffmpeg because certain file (.mp3) causes PySoundFile to fail and have to use audioread
     """
+    signature=4
     res=[]
     y, sr = librosa.load(input, sr=sample_rate)
     if expand:
         onset_env = librosa.onset.onset_strength(y=y, sr=sr)
         tempo = librosa.feature.tempo(onset_envelope=onset_env, sr=sr)
-        mean_tempo=np.mean(tempo)
-        hop_length=int(90/(mean_tempo)*hop_length)
+        mean_tempo=np.ceil(np.mean(tempo))
+        hop_length=int((60/(mean_tempo)*hop_length)*signature/(window_length/10))
     for octave in octave_shift:
         y_shifted=librosa.effects.pitch_shift(y,sr=sr,n_steps=octave*12) if octave!=0 else y
         fmin = librosa.midi_to_hz(28) #min frequency that the transform hold, which is E1

@@ -205,6 +205,7 @@ NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
 INNOTATION_2=['maj','min']
 INNOTATION_5=['maj','min','maj7','min7','7']
 INNOTATION_7=['maj','min','maj7','min7','7','dim','sus4']
+INNOTATION_DICT={'maj':'major','min':'minor','maj7':'major 7','min7':'minor 7','7':'7','dim':'diminished','sus4':'suspended 4'}
 
 CHORD_DICT_2={'':'maj','maj':'maj','min':'min','dim':'min','aug':'maj','maj7':'maj','min7':'min','7':'maj','dim7':'min','hdim7':'min','minmaj7':'maj','maj6':'maj','min6':'min','9':'maj','maj9':'maj','min9':'min','sus4':'maj','sus2':'min','5':'min'}
 CHORD_DICT_2_CHANGED={'':'maj','maj':'maj','min':'min','dim':'X','aug':'X','maj7':'maj','min7':'min','7':'maj','dim7':'X','hdim7':'X','minmaj7':'min','maj6':'maj','min6':'min','9':'X','maj9':'maj','min9':'min','sus4':'X','sus2':'X','5':'X'}
@@ -217,9 +218,15 @@ AUDIO_DIR="/mnt/e/Local code/Official work/CNN/Groundtruth/Audio/"
 CHORD_DIR="/mnt/e/Local code/Official work/CNN/Groundtruth/Chord/"
 OUTPUT_DIR="/mnt/e/Local code/Official work/CNN/Output/"
 
-AUDIO_DIR="CNN\\Groundtruth\\Audio\\"
-CHORD_DIR="CNN\\Groundtruth\\Chord\\"
-OUTPUT_DIR="CNN\\Output\\"
+# AUDIO_DIR="CNN\\Groundtruth\\Audio\\"
+# CHORD_DIR="CNN\\Groundtruth\\Chord\\"
+# OUTPUT_DIR="CNN\\Output\\"
 
 ######################COMMON######################
 CHROMAGRAM_DICT={'maj':[0,4,7],'min':[0,3,7],'maj7':[0,4,7,11],'min7':[0,3,7,10],'7':[0,4,7,10],'dim':[0,3,6],'sus4':[0,5,7]}
+
+
+
+###########EXPORT MODULE
+SIMUL_PATH='ExportModule/AudioData/Simultaneously/'
+SEQUENCE_PATH='ExportModule/AudioData/Sequential/'

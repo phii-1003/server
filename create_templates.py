@@ -92,28 +92,6 @@ def create_chromagram_dict(chord_list,to_json=False,low=0.2,high=1,peak=1,neighb
                     chromagram[(note_idx+i+1)%12]=neighbor_penalty
                     chromagram[(note_idx+i-1)%12]=neighbor_penalty
         chromagram_dict[chord]=chromagram
-    # initialise lists with zeros
-    # for chord in range(num_chords):
-    #     template[major[chord]] = list()
-    #     template[minor[chord]] = list()
-    #     for note in range(num_chords):
-    #         template[major[chord]].append(0)
-    #         template[minor[chord]].append(0)
-
-    # for chord in range(num_chords):
-    #     for note in range(num_chords):
-    #         if note == 0 or note == 7:
-    #             template[major[chord]][(note + offset) % num_chords] = 1
-    #             template[minor[chord]][(note + offset) % num_chords] = 1
-    #         elif note == 4:
-    #             template[major[chord]][(note + offset) % num_chords] = 1
-    #         elif note == 3:
-    #             template[minor[chord]][(note + offset) % num_chords] = 1
-    #     offset += 1
-
-    # debugging
-    # for key, value in chromagram_dict.items():
-    #     print(key, value)
 
     # save as JSON file
     if to_json:

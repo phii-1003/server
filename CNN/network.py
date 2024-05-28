@@ -17,7 +17,7 @@ class MyLRSchedule(keras.optimizers.schedules.LearningRateSchedule):
     def __call__(self, step):
         return self.learning_rate*math.pow(self.decay,step/self.decay_step)
 class CNN_Audio(tf.Module):
-    def __init__(self,input_param,chords_list,network_map,batch_number,nodes_map,**kwargs):
+    def __init__(self,chords_list,network_map,nodes_map,**kwargs):
         """
         0. desc: init the Network parameters
         1. params:
@@ -45,11 +45,6 @@ class CNN_Audio(tf.Module):
             "softmax"
         """
         # super.__init__(**kwargs)
-        _,input_height,input_width,input_channels=input_param
-
-        self.batches=batch_number
-        self.input_dim=(input_height,input_width)
-        self.input_channels=input_channels
 
         self.layers=len(network_map)
         self.network=[i[0] for i in network_map]
@@ -64,7 +59,7 @@ class CNN_Audio(tf.Module):
         self.data=[] #is used to store forward result in one train session
 
         # kernelGen=KernelGen(self.kernels_map,nodes_map) #[layer,height,width,inChannels,quantity].Note: only create kernel for conv layers
-        chromagram=list(create_chromagram_dict(chords_list,to_json=False,low=0.07,high=0.7,peak=0.9,neighbor_penalty=-0.25).values())
+        chromagram=list(create_chromagram_dict(chords_list,to_json=False,low=0.01,high=0.8,peak=0.8,neighbor_penalty=0.01).values())
         kernelGen=[np.expand_dims(np.array(chromagram).T,axis=(1,2))]
         biasGen=BiasGen(self.kernels_map)#Note: only create bias for conv layers
         # if load!=None:
@@ -100,7 +95,6 @@ class CNN_Audio(tf.Module):
         3.Note: drop out for the first three layers are 0.5
         """
         tmp_res=input_data
-        # print(tmp_res[0,:,0,0])
         conv_counter=0
         def checkErr(tens):
             if tf.reduce_any(tf.math.is_nan(tens)):
@@ -166,16 +160,7 @@ class CNN_Audio(tf.Module):
         2. return: nothing.Update kernels and bias
         3.Note: 
         """
-        # predicted_idx=tf.argmax(self.data,1)
-        # confusion_matrix = tf.math.confusion_matrix(
-        # groundtruth_data, predicted_idx, num_classes=self.chords_count)
-        # evaluation_step = tf.reduce_mean(tf.cast(predicted_idx, tf.float32))
-        # tf.summary.scalar('accuracy', evaluation_step)
-        # print(len(self.data))
         full_data= tf.concat(self.data,axis=0)
-        # for i in self.w:
-        #     print(i.numpy())
-        # groundtruth_data_array_numpy=list(groundtruth_data_array.unbatch().as_numpy_iterator()) #for GPU
         groundtruth_data_array_numpy=tf.concat(groundtruth_data_array,axis=0) #for CPU
         predicted_value=tf.argmax(full_data,axis=1)
         groundtruth_value=tf.argmax(groundtruth_data_array_numpy,axis=1)
@@ -213,7 +198,7 @@ class CNN_Audio(tf.Module):
         chords_prob_lst=np.array(list(json.load(f1).values()),dtype='float32')
         full_data= tf.concat(self.data,axis=0)
         predicted_value=full_data.numpy()
-
+        
         # for i in range(len(predicted_value)):
         #     predicted_value[i,:]/=sum(predicted_value[i,:])
         return predicted_value

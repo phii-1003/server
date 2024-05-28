@@ -11,8 +11,8 @@ chord_list=ChordListGen(NOTES,innotation)
 #preprocess, run if there is no .npy file
 ##notes: from 01 to 12 is Beatles, 13 and 14 is Queen 
 octaves=list(np.arange(-11/12,11/12,1/12))
-# preprocessData(['17','18'],AUDIO_DIR,CHORD_DIR,chord_dict,NOTES_DICT,chord_list,hop_length=hop_length,window_frames=19,postfix=postfix, octave_shift=octaves,usage="train")
-preprocessData(['02','03','04','05','08','09','11'],AUDIO_DIR,CHORD_DIR,chord_dict,NOTES_DICT,chord_list,hop_length=hop_length,window_frames=19,postfix=postfix, octave_shift=[-9/12,-4/12,0,5/12,7/12,10/12,1],usage="valid")
+preprocessData(['17','18','19'],AUDIO_DIR,CHORD_DIR,chord_dict,NOTES_DICT,chord_list,hop_length=hop_length,window_frames=19,postfix=postfix, octave_shift=octaves,usage="train")
+preprocessData(['01','02','03','04','05','08','09','11','12'],AUDIO_DIR,CHORD_DIR,chord_dict,NOTES_DICT,chord_list,hop_length=hop_length,window_frames=19,postfix=postfix, octave_shift=[-9/12,-4/12,0,5/12,7/12,10/12,1],usage="valid")
 # preprocessData(['06','07','12','13','14','15'],AUDIO_DIR,CHORD_DIR,chord_dict,NOTES_DICT,chord_list,hop_length=hop_length,window_frames=19,postfix=postfix, octave_shift=[-10/12,-8/12,-6/12,-4/12,-2/12,0,1/12,3/12,5/12,7/12,9/12,11/12],usage="pretrain")
 
     
