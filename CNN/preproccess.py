@@ -367,10 +367,10 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
     octave_shift: list of octave shifting 
     2. options: cast type to float32; with expand=True, assume time signature is 4-> each window frame duration is equal 4 beat
     CQT;each frame last 0.1 seconds based on hop_length 4410 and sr 44100 
-    3. return: [data(batches,height,width,channels=1)]
+    3. return: [data(batches,height,width,channels=1)],hop_length,duration
     4. Note: needs to install ffmpeg because certain file (.mp3) causes PySoundFile to fail and have to use audioread
     """
-    signature=4
+    signature=2
     res=[]
     y, sr = librosa.load(input, sr=sample_rate)
     if expand:
@@ -400,5 +400,5 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
         append_res=np.array(np.split(chroma_CQT_smooth,samples,axis=1))
         append_res=np.expand_dims(append_res,axis=(3))
         res.append(append_res)
-    return res,hop_length
+    return res,hop_length,librosa.get_duration(y=y,sr=sr)
     

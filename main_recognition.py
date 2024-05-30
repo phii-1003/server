@@ -31,9 +31,11 @@ class Recognition():
         self.neural_network=CNN_Audio(chord_list,network_map,nodes_map)
         self.neural_network.load_params(postfix)
     def recognize(self,input_dir:str,groundtruth_dir=None,chord_classes=2):
-
+        """
+        return: final_chords,window_length,duration,accuracy(if possible)
+        """
         #input process
-        input_data,hop_len=preprocessAudioFile(input=input_dir,hop_length=hop_length,window_length=19,expand=True)
+        input_data,hop_len,duration=preprocessAudioFile(input=input_dir,hop_length=self.hop_length,window_length=19,expand=True)
         input_data=input_data[0]
         hop_length=hop_len
 
@@ -87,7 +89,7 @@ class Recognition():
             acc=np.count_nonzero([a==b for a,b in zip(groundtruth_chord,final_chords)])/len(groundtruth_chord)
             acc*=100
             # print("Final accuracy: ",acc*100,"%")
-        return final_chords,[cnn_acc,acc]
+        return final_chords,(hop_length/44100)*self.window_frames,duration,[cnn_acc,acc]
     
 def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     innotation=INNOTATION_2
@@ -101,7 +103,7 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
     _, nested_cof = get_nested_circle_of_fifths()
     #input process
     
-    input_data,hop_len=preprocessAudioFile(input=input_dir,hop_length=hop_length,window_length=19,expand=True)
+    input_data,hop_len,_=preprocessAudioFile(input=input_dir,hop_length=hop_length,window_length=19,expand=True)
     input_data=input_data[0]
     hop_length=hop_len
     #CNN:
@@ -163,9 +165,9 @@ def main(input_dir:str,groundtruth_dir=None,chord_classes=2):
         acc*=100
         # print("Final accuracy: ",acc*100,"%")
     return final_chords,[cnn_acc,acc]
-res=main("audio2.mp3",None)
-print(res[0])
-print(res[1][1])
+# res=main("audio2.mp3",None)
+# print(res[0])
+# print(res[1][1])
 # res=main("CNN/Groundtruth/Audio/08/08 Within You Without You.mp3","CNN/Groundtruth/Chord/08/08_-_Within_You_Without_You.lab")
 # print(res)
 # res=main("CNN/Groundtruth/Audio/02/11 - I Wanna Be Your Man.mp3","CNN/Groundtruth/Chord/02/11_-_I_Wanna_Be_Your_Man.lab")
