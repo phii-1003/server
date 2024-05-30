@@ -370,7 +370,7 @@ def preprocessAudioFile(input,window_length=19,sample_rate=44100,bins_per_octave
     3. return: [data(batches,height,width,channels=1)],hop_length,duration
     4. Note: needs to install ffmpeg because certain file (.mp3) causes PySoundFile to fail and have to use audioread
     """
-    signature=2
+    signature=4
     res=[]
     y, sr = librosa.load(input, sr=sample_rate)
     if expand:
