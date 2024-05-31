@@ -6,3 +6,4 @@ HMM/data/
 *.ipynb
 __pycache__/
 *.json
+!ExportModule/AudioData/*/*.mp3
