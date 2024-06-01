@@ -1,5 +1,4 @@
 CNN/Groundtruth/
-CNN/Output/
 HMM/data/
 *.mp3
 *.lab
