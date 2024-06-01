@@ -20,6 +20,7 @@ app.use(morgan("common"));
 db.connect();
 
 //ROUTES
+app.get("/", (req, res) => res.send("Express on Vercel"));
 app.use("/api/v1/song", songRoute);
 // app.use("/v1/book", bookRoute);
 
