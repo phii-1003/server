@@ -1,5 +1,5 @@
 const songRouter = require("express").Router();
-const songController = require("../controllers/song_controller");
+const songController = require("../actions/song_actions");
 
 // songRouter.post("/addNewSong", songController.addNewSong);
 
