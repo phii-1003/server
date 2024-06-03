@@ -120,7 +120,7 @@ const getSongByName = async (req, res, next) => {
 const getSong = async (req, res, next) => {
   try {
     const song = await Song.findOne({ url: req.query.url}, {}, { lean: true });
-    return res.status(200).json(song);
+    return res.status(200).json(song.timestamp);
   } catch (error) {
     next(createError(error)); 
   }
