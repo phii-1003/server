@@ -41,10 +41,12 @@ const data_incoming_handler=async (python_process)=>{
     return new Promise((resolve,reject)=>{
         const handle_data=(data)=>{
             json_chord_data=Buffer.from(data).toString("utf8");
-            json_str=to_time_stamp(json_chord_data)
+            // json_str=to_time_stamp(json_chord_data)
+            json_str=json_chord_data
             python_process.stdout.removeListener('data',handle_data)
             // setTimeout(()=>{reject("Too long to recognize"),2000000})
             resolve(btoa(json_str))
+            // resolve(json_str)
         }
         python_process.stdout.on('data',handle_data)
     })

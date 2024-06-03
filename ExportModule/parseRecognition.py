@@ -22,7 +22,7 @@ def parseRecognitionModuleOutput(chord_list:list[str],window_length,separator=':
             root_note=chord_name
             interval="None"
         if prev_chord[0]!=chord_name:
-            tmp_dict={'Time': str(idx*window_length),"ChordName":chord_name,"ChordRoot":root_note,"ChordInterval":interval}
+            tmp_dict={'time': str(idx*window_length),"chordName":chord_name,"chordRoot":root_note,"chordInterval":interval}
             json_str_res=json.dumps(tmp_dict)
             res_lst.append(json_str_res)
         prev_chord=(chord_name,idx)
