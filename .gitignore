@@ -1,1 +1,9 @@
+CNN/Groundtruth/
+HMM/data/
+*.mp3
+*.lab
+*.ipynb
+__pycache__/
+*.json
+!ExportModule/AudioData/*/*.mp3
 node_modules/
