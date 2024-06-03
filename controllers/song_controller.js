@@ -1,5 +1,6 @@
 const Song = require("../models/song_model");
 const createError = require("http-errors");
+const youtubeService = require("../middlewares/youtube_service");
 
 //add new task
 const addNewSong = async (req, res, next) => {
@@ -102,7 +103,12 @@ const getSongByName = async (req, res, next) => {
   console.log(req.query.name);
   try {
   // Find all songs with the given name.
-    const allData = await Song.find({ name: { $regex: `${req.query.name}`, $options: 'i' }});
+    const allDataDb = await Song.find({ name: { $regex: `${req.query.name}`, $options: 'i' }});
+  //find all songs with the given name in youtube
+    const allDataYoutube = await youtubeService(req.query.name);
+    const allData = allDataDb.concat(allDataYoutube);
+    console.log("Data: ",allDataDb);
+    console.log("Youtube: ",allDataYoutube);
   // Return the songs as a JSON response.
     return res.status(200).json(allData);
   } catch (error) {
