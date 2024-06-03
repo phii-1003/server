@@ -1,4 +1,4 @@
-const Song = require("../datatype/song_datatype");
+const Song = require("../models/song_model");
 const createError = require("http-errors");
 
 //add new task
