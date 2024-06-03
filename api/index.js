@@ -8,6 +8,7 @@ const morgan = require("morgan");
 const helmet = require("helmet");
 const dotenv = require("dotenv");
 const songRoute = require("../router/song_router");
+const chordRoute= require("../router/chord_router")
 const db = require("../database/mongoose_db");
 const errorMiddleWare = require("../middlewares/error_middleware");
 
@@ -22,6 +23,7 @@ db.connect();
 //ROUTES
 app.get("/", (req, res) => res.send("Express on Vercel"));
 app.use("/api/v1/song", songRoute);
+app.use("/api/v1/chord",chordRoute)
 // app.use("/v1/book", bookRoute);
 
 app.use(errorMiddleWare);

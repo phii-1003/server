@@ -5,9 +5,9 @@ from ExportModule.parseRecognition import parseRecognitionModuleOutput
 # from constant import NOTES,INNOTATION_2
 # chord_list=ChordListGen(NOTES,INNOTATION_2)
 # song="audio2.mp3"
-# recog_obj=Recognition()
+# reco_obj=Recognition()
 # export_obj=ExportMusic(chord_list)
-# result_chords,window_length,duration,_=recog_obj.recognize(song)
+# result_chords,window_length,duration,_=reco_obj.recognize(song)
 # duration=int(duration*1000)
 # window_length=int(window_length*1000)
 # json_result=parseRecognitionModuleOutput(result_chords,window_length)

@@ -194,8 +194,8 @@ class CNN_Audio(tf.Module):
         self.ema_mean=[math.nan for _ in self.ema_mean]
         self.ema_variance=[math.nan for _ in self.ema_variance]
     def toChordProb(self):
-        f1=open(CHORD_DIR+"chord_prob_dict.json")
-        chords_prob_lst=np.array(list(json.load(f1).values()),dtype='float32')
+        # f1=open(CHORD_DIR+"chord_prob_dict.json")
+        # chords_prob_lst=np.array(list(json.load(f1).values()),dtype='float32')
         full_data= tf.concat(self.data,axis=0)
         predicted_value=full_data.numpy()
         

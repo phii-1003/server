@@ -54,7 +54,6 @@ class Recognition():
                 groundtruth_chord.append(self.chord_list[i])
 
         chroma_data=self.neural_network.toChordProb()
-        print(np.argmax(chroma_data,axis=1))
         chroma_data=chroma_data.T
         self.neural_network.clear_data()
 

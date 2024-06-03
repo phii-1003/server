@@ -39,7 +39,7 @@ def initialize(chroma, templates, chords, nested_cof):
         for idx in range(num_chords):
             cof_idx_target=nested_cof.index(chords[idx])
             distance=min(24-abs(cof_idx_root-cof_idx_target),abs(cof_idx_root-cof_idx_target))
-            A[i][idx] = ((num_chords//2-distance)+eps) / (
+            A[i][idx] = ((num_chords//2-distance)*0+eps) / (
                 (num_chords//2)**2 + num_chords * eps
             )
     # for chord in chords:

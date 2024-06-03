@@ -61,7 +61,8 @@ class ExportMusic():
             if chord_name=="N":
                 chord_sequence.append(chord_name)
                 time_stamp_sequence.append(duration)
-                type_sequence.append(True,0)
+                type_sequence.append((True,0))
+                continue
             chord_audio_simul=self.chord_audio_lst_simul[chord_name]
             chord_audio_sequence=self.chord_audio_lst_sequence[chord_name]
             for i in range(chord_span):
