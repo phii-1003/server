@@ -119,7 +119,7 @@ const getSongByName = async (req, res, next) => {
 
 const getSong = async (req, res, next) => {
   try {
-    const song = await Song.findOne({ _id: req.query._id}, {}, { lean: true });
+    const song = await Song.findOne({ url: req.query.url}, {}, { lean: true });
     return res.status(200).json(song);
   } catch (error) {
     next(createError(error)); 
